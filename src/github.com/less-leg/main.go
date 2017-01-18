@@ -2,13 +2,11 @@ package main
 
 import (
 	"fmt"
-	"strings"
 	"os"
 	"path/filepath"
 
 	. "github.com/less-leg/dbmodel/person"
-	"github.com/less-leg/generator/definition"
-	"github.com/less-leg/generator"
+	"github.com/less-leg/parser"
 )
 
 func createEntityFile(pkgFilePath, entityName string) (entityFile *os.File) {
@@ -26,44 +24,47 @@ func createEntityFile(pkgFilePath, entityName string) (entityFile *os.File) {
 //{{ end }}
 
 func main() {
-	srcRoot := "D:/projects/less-leg/src"
-	pkg := "github.com/less-leg/dbmodel"
+	ps := parser.Parse("github.com/less-leg/dbmodel", "D:/projects/less-leg/src")
+	fmt.Printf("%#v\n", ps)
 
-	pkgDefinition := definition.Parse(pkg, srcRoot)
-	fmt.Println(pkgDefinition)
+	//srcRoot := "D:/projects/less-leg/src"
+	//pkg := "github.com/less-leg/dbmodel"
 
-	// code below responsible for code generation
+	//pkgDefinition := definition.Parse(pkg, srcRoot)
+	//fmt.Println(pkgDefinition)
+	//
+	//// code below responsible for code generation
+	//
+	//pkgFilePath := filepath.Join(pkgDefinition.Path, "lolsql")
+	//err := os.Mkdir(pkgFilePath, os.ModePerm)
+	//if err != nil {
+	//	panic(err)
+	//}
+	//
+	//for _, def := range pkgDefinition.EntityDefinitions {
+	//	defNameLowCase := strings.ToLower(def.Name)
+	//	entityFile := createEntityFile(pkgFilePath, defNameLowCase)
+	//
+	//	generator.Package.ExecuteTemplate(entityFile, "", defNameLowCase)
+	//	generator.Imports.ExecuteTemplate(entityFile, "", ". \"github.com/less-leg/types\"\n\"strings\"")
+	//	generator.Column_interface.ExecuteTemplate(entityFile, "", nil)
+	//	generator.Lol_struct.ExecuteTemplate(entityFile, "", struct{
+	//		TableName string
+	//		Columns   string
+	//	}{
+	//		TableName:pkgDefinition.TableDefinitions[def.Name].TableName,
+	//		Columns: strings.Join(pkgDefinition.TableDefinitions[def.Name].ColumnNames(), ", "),
+	//	})
+	//	generator.Select_func.ExecuteTemplate(entityFile, "", nil)
+	//	generator.LolWhere_struct.ExecuteTemplate(entityFile, "", nil)
+	//	generator.LolConditionAnd_struct.ExecuteTemplate(entityFile, "", nil)
+	//	generator.LolConditionOr_struct.ExecuteTemplate(entityFile, "", nil)
+	//	generator.ColumnStub.ExecuteTemplate(entityFile, "", def.FieldsToColumnNames())
+	//
+	//	entityFile.Close()
+	//}
 
-	pkgFilePath := filepath.Join(pkgDefinition.Path, "lolsql")
-	err := os.Mkdir(pkgFilePath, os.ModePerm)
-	if err != nil {
-		panic(err)
-	}
-
-	for _, def := range pkgDefinition.EntityDefinitions {
-		defNameLowCase := strings.ToLower(def.Name)
-		entityFile := createEntityFile(pkgFilePath, defNameLowCase)
-
-		generator.Package.ExecuteTemplate(entityFile, "", defNameLowCase)
-		generator.Imports.ExecuteTemplate(entityFile, "", ". \"github.com/less-leg/types\"\n\"strings\"")
-		generator.Column_interface.ExecuteTemplate(entityFile, "", nil)
-		generator.Lol_struct.ExecuteTemplate(entityFile, "", struct{
-			TableName string
-			Columns   string
-		}{
-			TableName:pkgDefinition.TableDefinitions[def.Name].TableName,
-			Columns: strings.Join(pkgDefinition.TableDefinitions[def.Name].ColumnNames(), ", "),
-		})
-		generator.Select_func.ExecuteTemplate(entityFile, "", nil)
-		generator.LolWhere_struct.ExecuteTemplate(entityFile, "", nil)
-		generator.LolConditionAnd_struct.ExecuteTemplate(entityFile, "", nil)
-		generator.LolConditionOr_struct.ExecuteTemplate(entityFile, "", nil)
-		generator.ColumnStub.ExecuteTemplate(entityFile, "", def.FieldsToColumnNames())
-
-		entityFile.Close()
-	}
-
-	TestAllThatShit()
+	//TestAllThatShit()
 }
 
 func TestAllThatShit() {

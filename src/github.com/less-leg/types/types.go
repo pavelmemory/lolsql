@@ -1,18 +1,5 @@
 package types
 
-import "reflect"
-
-type LolDB struct{}
-
-func GetTableName(entity interface{}) string {
-	entityType := reflect.TypeOf(entity)
-	if tableNameMethod, ok := entityType.MethodByName("TableName"); ok {
-		return tableNameMethod.Func.Call(nil)[0].String()
-	} else {
-		return entityType.Name()
-	}
-}
-
 type SelectColumn interface {
 	Column() string
 }
