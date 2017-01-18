@@ -113,7 +113,7 @@ local.properties
 
 # IntelliJ
 /out/
-less-leg.iml
+*.iml
 
 # mpeltonen/sbt-idea plugin
 .idea_modules/

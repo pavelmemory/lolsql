@@ -8,12 +8,6 @@ import (
 	"github.com/less-leg/utils"
 )
 
-type ParsedStruct struct {
-	Name string
-	Type *ast.StructType
-	Methods map[string]*ast.FuncDecl
-}
-
 func Parse(packageName string, sourceDir string) []*ParsedStruct {
 	pckg, err := build.Import(packageName, sourceDir, build.IgnoreVendor)
 	utils.PanicIf(err)
