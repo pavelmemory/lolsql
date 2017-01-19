@@ -24,8 +24,12 @@ func createEntityFile(pkgFilePath, entityName string) (entityFile *os.File) {
 //{{ end }}
 
 func main() {
-	ps := parser.Parse("github.com/less-leg/dbmodel", "D:/projects/less-leg/src")
-	fmt.Printf("%#v\n", ps)
+	parsedStructs := parser.Parse("github.com/less-leg/dbmodel", "D:/projects/less-leg/src")
+	for _, psdStruct := range parsedStructs {
+		strDef := psdStruct.ToStructDefinition()
+		fmt.Printf("%s\n", strDef.String())
+	}
+
 
 	//srcRoot := "D:/projects/less-leg/src"
 	//pkg := "github.com/less-leg/dbmodel"

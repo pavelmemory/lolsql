@@ -29,7 +29,7 @@ func Parse(packageName string, sourceDir string) []*ParsedStruct {
 					}
 				}
 			}
-		} else if funcDecl, ok := decl.(*ast.FuncDecl); ok {
+		} else if funcDecl, ok := decl.(*ast.FuncDecl); ok && funcDecl.Recv != nil && len(funcDecl.Recv.List) == 1 {
 			for _, recv := range funcDecl.Recv.List {
 				if star, ok := recv.Type.(*ast.StarExpr); ok {
 					if ident, ok := star.X.(*ast.Ident); ok {
