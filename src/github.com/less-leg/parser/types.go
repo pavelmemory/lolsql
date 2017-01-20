@@ -16,6 +16,7 @@ var SupportedBasicTypes = map[string]bool{
 	"int8": true,
 	"int16": true,
 	"int32": true,
+	"int64": true,
 
 	"uint": true,
 	"uint8": true,
@@ -234,14 +235,23 @@ func isPrimary(tag string) bool {
 	return strings.Index(tag, "id[true]") >= 0
 }
 
+//const MaxColumnNameLength = 32
+//var ColumnReg, _ = regexp.Compile(`.*(column\[.{1,` + strconv.Itoa(MaxColumnNameLength) + `}\]).*`)
+
 func columnName(field *ast.Field, tag string) string {
+	//regColName := ColumnReg.FindStringSubmatch(tag)
+	//if len(regColName) == 2 {
+	//	return regColName[1]
+	//}
+	//return field.Names[0].Name
+
 	colName := field.Names[0].Name
 	colTagStart := strings.Index(tag, "column[")
 	if colTagStart >= 0 {
 		colNameStart := colTagStart + len("column[")
 		colNameEnd := strings.Index(tag[colNameStart:], "]")
-		if colNameEnd < 0 {
-			panic(tag)
+		if colNameEnd < 1 {
+			panic("Columnt name must be at least 1 character long: " + tag)
 		}
 		colName = string(tag[colNameStart:colNameStart + colNameEnd])
 	}
@@ -279,7 +289,7 @@ func (this *FieldTypeDefinition) IsNull() bool {
 }
 
 func (this *FieldTypeDefinition) IsBasic() bool {
-	if (this.Ptr || this.Slice || this.Selector != "") && this.Underlying != nil {
+	if (this.Ptr || this.Selector != "") && this.Underlying != nil {
 		return this.Underlying.IsBasic()
 	}
 	return SupportedBasicTypes[this.Name]
