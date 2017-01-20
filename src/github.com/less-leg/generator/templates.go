@@ -129,11 +129,141 @@ func (this *lolConditionOr) Or(cond LolCondition) LolCondition {
 	return this
 }`)
 
-var ColumnStub, _ = template.New("").Funcs(template.FuncMap{"Title": strings.Title, "ToLower": strings.ToLower}).Parse(`
+var ColumnStub_struct, _ = template.New("").Funcs(template.FuncMap{"Title": strings.Title, "ToLower": strings.ToLower}).Parse(`
 {{ range . }}
-type {{ ToLower .FieldName }}Stub struct { column }
-var {{ ToLower .FieldName }}StubConst {{ ToLower .FieldName }}Stub
-func {{ Title .FieldName }}() *{{ ToLower .FieldName }}Stub {return &{{ ToLower .FieldName }}StubConst}
-func (*{{ ToLower .FieldName }}Stub) Column() string {return "{{ .ColumnName }}"}
+type {{ ToLower .Value1 }}Stub struct { column }
+var {{ ToLower .Value1 }}StubConst {{ ToLower .Value1 }}Stub
+func {{ Title .Value1 }}() *{{ ToLower .Value1 }}Stub {return &{{ ToLower .Value1 }}StubConst}
+func (*{{ ToLower .Value1 }}Stub) Column() string {return "{{ .Value2 }}"}
 {{ end }}
+`)
+
+var Conditions = map[string]*template.Template{
+	"int": ConditionInt,
+	"int8": ConditionInt,
+	"int16": ConditionInt,
+	"int32": ConditionInt,
+	"int64": ConditionInt,
+
+	"string": ConditionString,
+}
+
+var ConditionInt, _ = template.New("").Funcs(template.FuncMap{"Title": strings.Title, "ToLower": strings.ToLower}).Parse(`
+type {{ ToLower .FieldToColumn.Value1 }}{{ Title .StructName }} struct {
+	HasNext
+	values    []*{{ .TypeName }}
+	checkNull bool
+}
+
+func (this *{{ ToLower .FieldToColumn.Value1 }}{{ Title .StructName }}) NotNull() LolCondition {
+	if len(this.values) > 0 {
+		panic("Invalid usage: cannot check both equality and NULL check in one condition")
+	}
+	this.checkNull = true
+	return this
+}
+
+func (this *{{ ToLower .FieldToColumn.Value1 }}{{ Title .StructName }}) render() string {
+	if this.values == nil || len(this.values) == 0 {
+		if this.checkNull {
+			return "{{ .FieldToColumn.Value2 }} is not null"
+		} else {
+			return "{{ .FieldToColumn.Value2 }} is null"
+		}
+	}
+	if (len(this.values) == 1) {
+		return fmt.Sprintf("{{ .FieldToColumn.Value2 }} = %d", *(this.values[0]))
+	}
+	vstr := make([]string, 0, len(this.values))
+	for _, vptr := range this.values {
+		if vptr != nil {
+			vstr = append(vstr, strconv.Itoa(*vptr))
+		}
+	}
+	return fmt.Sprintf("{{ .FieldToColumn.Value2 }} in (%s)", strings.Join(vstr, ", "))
+}
+
+func (this *{{ ToLower .FieldToColumn.Value1 }}{{ Title .StructName }}) Render() string {
+	if this.Next() != nil {
+		return this.render() + " " + this.Next().Render()
+	}
+	return this.render()
+}
+
+func (this *{{ ToLower .FieldToColumn.Value1 }}{{ Title .StructName }}) And(cond LolCondition) LolCondition {
+	this.SetNext(&lolConditionAnd{condition:cond})
+	return this
+}
+
+func (this *{{ ToLower .FieldToColumn.Value1 }}{{ Title .StructName }}) Or(cond LolCondition) LolCondition {
+	this.SetNext(&lolConditionOr{condition:cond})
+	return this
+}
+
+func {{ Title .FieldToColumn.Value1 }}Is(value ...*{{ .TypeName }}) LolCondition {
+	return &{{ ToLower .FieldToColumn.Value1 }}{{ Title .StructName }}{values:value}
+}
+`)
+
+var ConditionString, _ = template.New("").Funcs(template.FuncMap{"Title": strings.Title, "ToLower": strings.ToLower}).Parse(`
+type {{ ToLower .FieldToColumn.Value1 }}{{ Title .StructName }} struct {
+	HasNext
+	values    []*{{ .TypeName }}
+	checkNot bool
+}
+
+func (this *{{ ToLower .FieldToColumn.Value1 }}{{ Title .StructName }}) render() string {
+	if this.values == nil || len(this.values) == 0 {
+		if this.checkNot {
+			return "{{ .FieldToColumn.Value2 }} is not null"
+		} else {
+			return "{{ .FieldToColumn.Value2 }} is null"
+		}
+	}
+	if len(this.values) == 1 {
+		if this.checkNot {
+			return fmt.Sprintf("{{ .FieldToColumn.Value2 }} <> '%s'", *(this.values[0]))
+		} else {
+			return fmt.Sprintf("{{ .FieldToColumn.Value2 }} = '%s'", *(this.values[0]))
+		}
+	}
+	vstr := make([]string, 0, len(this.values))
+	for _, vptr := range this.values {
+		if vptr != nil {
+			vstr = append(vstr, "'" + *vptr + "'")
+		} else {
+			panic("NULL can't be used as one of the arguments in the list")
+		}
+	}
+	if this.checkNot {
+		return fmt.Sprintf("{{ .FieldToColumn.Value2 }} not in (%s)", strings.Join(vstr, ", "))
+	} else {
+		return fmt.Sprintf("{{ .FieldToColumn.Value2 }} in (%s)", strings.Join(vstr, ", "))
+	}
+}
+
+func (this *{{ ToLower .FieldToColumn.Value1 }}{{ Title .StructName }}) Render() string {
+	if this.Next() != nil {
+		return this.render() + " " + this.Next().Render()
+	}
+	return this.render()
+}
+
+func (this *{{ ToLower .FieldToColumn.Value1 }}{{ Title .StructName }}) And(cond LolCondition) LolCondition {
+	this.SetNext(&lolConditionAnd{condition:cond})
+	return this
+}
+
+func (this *{{ ToLower .FieldToColumn.Value1 }}{{ Title .StructName }}) Or(cond LolCondition) LolCondition {
+	this.SetNext(&lolConditionOr{condition:cond})
+	return this
+}
+
+func {{ Title .FieldToColumn.Value1 }}Is(values ...*string) *{{ ToLower .FieldToColumn.Value1 }}{{ Title .StructName }} {
+	return &{{ ToLower .FieldToColumn.Value1 }}{{ Title .StructName }}{values:values}
+}
+
+func {{ Title .FieldToColumn.Value1 }}IsNot(values ...*string) *{{ ToLower .FieldToColumn.Value1 }}{{ Title .StructName }} {
+	return &{{ ToLower .FieldToColumn.Value1 }}{{ Title .StructName }}{values:values, checkNot: true}
+}
 `)
