@@ -142,6 +142,54 @@ func (this *idPerson) Or(cond LolCondition) LolCondition {
 }
 func IdIs(value ...*int) LolCondition {
 	return &idPerson{values:value}
+}//=====================CONDITION====================
+type salaryPerson struct {
+	HasNext
+	values    []*float64
+	checkNull bool
+}
+func (this *salaryPerson) NotNull() LolCondition {
+	if len(this.values) > 0 {
+		panic("Invalid usage: cannot check both equality and NULL check in one condition")
+	}
+	this.checkNull = true
+	return this
+}
+func (this *salaryPerson) render() string {
+	if this.values == nil || len(this.values) == 0 {
+		if this.checkNull {
+			return "salary is not null"
+		} else {
+			return "salary is null"
+		}
+	}
+	if (len(this.values) == 1) {
+		return fmt.Sprintf("salary = %f", *(this.values[0]))
+	}
+	vstr := make([]string, 0, len(this.values))
+	for _, vptr := range this.values {
+		if vptr != nil {
+			vstr = append(vstr, strconv.FormatFloat(*vptr, 'f', -1, 64))
+		}
+	}
+	return fmt.Sprintf("salary in (%s)", strings.Join(vstr, ", "))
+}
+func (this *salaryPerson) Render() string {
+	if this.Next() != nil {
+		return this.render() + " " + this.Next().Render()
+	}
+	return this.render()
+}
+func (this *salaryPerson) And(cond LolCondition) LolCondition {
+	this.SetNext(&lolConditionAnd{condition:cond})
+	return this
+}
+func (this *salaryPerson) Or(cond LolCondition) LolCondition {
+	this.SetNext(&lolConditionOr{condition:cond})
+	return this
+}
+func SalaryIs(value ...*float64) LolCondition {
+	return &salaryPerson{values:value}
 }
 //===============Name=========================================
 type namePerson struct {

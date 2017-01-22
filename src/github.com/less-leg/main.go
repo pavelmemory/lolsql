@@ -9,15 +9,17 @@ import (
 	"github.com/less-leg/parser"
 	"strings"
 	"github.com/less-leg/generator"
-	//"github.com/less-leg/dbmodel/lolsql/person"
+	"github.com/less-leg/utils"
+	"io"
+	"github.com/less-leg/dbmodel/lolsql/person"
 )
 
 func main() {
-	generate := true
+	generate := false
 
 	if generate {
 		packageDir := "github.com/less-leg/dbmodel"
-		sourceDir := "D:/projects/less-leg/src"
+		sourceDir := "D:/workspace/GoProjects/lolsql/src"
 		parsedStructs := parser.Parse(packageDir, sourceDir)
 		lolDirPath := createDirectory(filepath.Join(sourceDir, packageDir, "lolsql"))
 		pckgDef := parser.NewPackageDefinition(lolDirPath, parsedStructs)
@@ -26,11 +28,12 @@ func main() {
 	} else {
 		TestAllThatShit()
 
-		//ids := []int{10, 102}
-		//fmt.Println(
-		//	person.Select(
-		//		person.Id(), person.Name_FirstName(), person.Name_MiddleName()).
-		//	Where(person.IdIs().And(person.IdIs(&ids[0], &ids[1]))).Render())
+		ids := []int{10, 102}
+		fmt.Println(
+			person.Select(
+				person.Id(), person.Name_FirstName(), person.Name_MiddleName()).
+			//Where(person.IdIs().And(person.IdIs(&ids[0], &ids[1]))).Render())
+			Where(person.IdIs(1).And(person.IdIs(ids[0], ids[1]))).Render())
 	}
 }
 
@@ -47,15 +50,11 @@ func generateLol(pckgDef *parser.PackageDefinition) {
 			generator.Imports.ExecuteTemplate(entityFile, "",
 				`. "github.com/less-leg/types"
 				"strings"
-				"fmt"
 				"strconv"`)
 			generator.Column_interface.ExecuteTemplate(entityFile, "", nil)
-			generator.Lol_struct.ExecuteTemplate(entityFile, "", struct{
-				TableName string
-				Columns   string
-			}{
-				TableName:sdef.TableName,
-				Columns: strings.Join(pckgDef.ColumnNames(structName), ", "),
+			generator.Lol_struct.ExecuteTemplate(entityFile, "", &parser.TupleStringString{
+				sdef.TableName,
+				strings.Join(pckgDef.ColumnNames(structName), ", "),
 			})
 			generator.Select_func.ExecuteTemplate(entityFile, "", nil)
 			generator.LolWhere_struct.ExecuteTemplate(entityFile, "", nil)
@@ -63,35 +62,69 @@ func generateLol(pckgDef *parser.PackageDefinition) {
 			generator.LolConditionOr_struct.ExecuteTemplate(entityFile, "", nil)
 			generator.ColumnStub_struct.ExecuteTemplate(entityFile, "", pckgDef.FieldsToColumns(structName))
 
-			for _, fdef := range sdef.FieldDefinitions() {
-				switch fdef := fdef.(type) {
-				case *parser.SimpleFieldDefinition:
-					if tmpl, found := generator.Conditions[fdef.FieldType.Name()]; found {
-						tmpl.ExecuteTemplate(entityFile, "", struct {
-							StructName string
-							TypeName string
-							FieldToColumn parser.TupleStringString
-						}{
-							StructName:structName,
-							TypeName: fdef.FieldType.Name(),
-							FieldToColumn:parser.TupleStringString{Value1:fdef.Name(), Value2:fdef.ColumnName},
-						})
-					} else {
-						panic("Generation template doesn't exist for type: " + fdef.String())
-					}
+			generateFields(entityFile, pckgDef, sdef)
 
-				//case *parser.ComplexFieldDefinition:
-				//	fdef.Embedded
-				}
-			}
-
-
-
-			entityFile.Close()
-
+			//for _, fdef := range sdef.FieldDefinitions() {
+			//	switch fdef := fdef.(type) {
+			//	case *parser.SimpleFieldDefinition:
+			//		if tmpl, found := generator.Conditions[fdef.FieldType.Name()]; found {
+			//			tmpl.ExecuteTemplate(entityFile, "", struct {
+			//				StructName string
+			//				TypeName string
+			//				FieldToColumn parser.TupleStringString
+			//				IsNullable string
+			//			}{
+			//				StructName:structName,
+			//				TypeName: fdef.FieldType.Name(),
+			//				FieldToColumn:parser.TupleStringString{Value1:fdef.Name(), Value2:fdef.ColumnName},
+			//				IsNullable: fdef.FieldType.PtrSign(),
+			//			})
+			//		} else {
+			//			panic("Generation template doesn't exist for type: " + fdef.String())
+			//		}
+			//
+			//	case *parser.ComplexFieldDefinition:
+			//		if fdef.Embedded {
+			//			if embdStrtDef, found := pckgDef.StructDefinitions[fdef.Name()]; found {
+			//				generateFields()
+			//			}
+			//		}
+			//	}
+			//}
+			utils.PanicIf(entityFile.Close())
 		case *parser.EmbeddedStructDefinition:
 		default:
 			panic("Unreachable code")
+		}
+	}
+}
+
+func generateFields(entityFile io.Writer, pckgDef *parser.PackageDefinition, sdef parser.StructDefinition) {
+	for _, fdef := range sdef.FieldDefinitions() {
+		switch fdef := fdef.(type) {
+		case *parser.SimpleFieldDefinition:
+			if tmpl, found := generator.Conditions[fdef.FieldType.Name()]; found {
+				tmpl.ExecuteTemplate(entityFile, "", struct {
+					StructName string
+					TypeName string
+					FieldToColumn parser.TupleStringString
+					IsNullable string
+				}{
+					StructName:sdef.Name(),
+					TypeName: fdef.FieldType.Name(),
+					FieldToColumn:parser.TupleStringString{Value1:fdef.Name(), Value2:fdef.ColumnName},
+					IsNullable: fdef.FieldType.PtrSign(),
+				})
+			} else {
+				panic("Generation template doesn't exist for type: " + fdef.String())
+			}
+
+		case *parser.ComplexFieldDefinition:
+			if fdef.Embedded {
+				if embdStrtDef, found := pckgDef.StructDefinitions[fdef.Name()]; found {
+					generateFields(entityFile, pckgDef, embdStrtDef)
+				}
+			}
 		}
 	}
 }

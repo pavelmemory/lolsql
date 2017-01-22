@@ -28,6 +28,8 @@ var SupportedBasicTypes = map[string]bool{
 	"float64": true,
 
 	"string": true,
+
+	"time.Time": true,
 }
 
 type PackageDefinition struct {
@@ -40,7 +42,7 @@ func NewPackageDefinition(lolDirPath string, parsedStructs []*ParsedStruct) *Pac
 	for _, psdStruct := range parsedStructs {
 		strDef := psdStruct.ToStructDefinition()
 		structDefinitions[strDef.Name()] = strDef
-		//fmt.Printf("%s\n", strDef.String())
+		fmt.Printf("%s\n", strDef.String())
 	}
 
 	return &PackageDefinition{
@@ -84,7 +86,7 @@ func (this *PackageDefinition) FieldsToColumns(structName string) []*TupleString
 				if sfdef.Embedded {
 					embftocs := this.FieldsToColumns(sfdef.name)
 					for _, embftoc := range embftocs {
-						embftoc.Value1 = sfdef.name + "_" + embftoc.Value1
+						embftoc.Value1 = sfdef.name + "." + embftoc.Value1
 					}
 					ftoc = append(ftoc, embftocs...)
 				}
@@ -341,11 +343,18 @@ type FieldTypeDefinition struct {
 	Underlying *FieldTypeDefinition
 }
 
-func (this *FieldTypeDefinition) IsNull() bool {
+func (this *FieldTypeDefinition) IsNullable() bool {
 	if this.Ptr || this.Slice {
 		return true
 	}
 	return false
+}
+
+func (this *FieldTypeDefinition) PtrSign() string {
+	if this.Ptr || this.Slice {
+		return "*"
+	}
+	return ""
 }
 
 func (this *FieldTypeDefinition) IsBasic() bool {

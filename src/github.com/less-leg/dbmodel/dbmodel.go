@@ -1,7 +1,7 @@
 package dbmodel
 
 type Person struct {
-	Id       int     `lolsql:"id[true] column[ID]"`
+	Id       int     `lolsql:"id[true]"`
 	Name
 	Password *string `lolsql:"column[SECRET]"`
 }
