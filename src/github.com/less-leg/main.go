@@ -11,10 +11,13 @@ import (
 	"github.com/less-leg/generator"
 	"github.com/less-leg/utils"
 	"io"
+	"github.com/less-leg/dbmodel/lolsql/person"
+	"time"
+	"github.com/less-leg/dbmodel/lolsql/handsome"
 )
 
 func main() {
-	generate := true
+	generate := false
 
 	if generate {
 		packageDir := "github.com/less-leg/dbmodel"
@@ -27,15 +30,15 @@ func main() {
 	} else {
 		TestAllThatShit()
 
-		//ids := []int{10, 102}
-		//fmt.Println(
-		//	person.Select(
-		//		person.Id(), person.Name_FirstName(), person.Name_MiddleName()).
-		//	//Where(person.IdIs().And(person.IdIs(&ids[0], &ids[1]))).Render())
-		//	Where(person.IdIs(1).And(person.IdIs(ids[0], ids[1]))).Render())
-		//
-		//now := time.Now()
-		//fmt.Println(handsome.Select().Where(handsome.DateOfBirthIsNot(&now)).Or(handsome.SalaryIs(10.2, 100.2)).Render())
+		ids := []int{10, 102}
+		fmt.Println(
+			person.Select(
+				person.Id(), person.Name_FirstName(), person.Name_MiddleName()).
+			//Where(person.IdIs().And(person.IdIs(&ids[0], &ids[1]))).Render())
+			Where(person.IdIs(1).And(person.IdIs(ids[0], ids[1]))).Render())
+
+		now := time.Now()
+		fmt.Println(handsome.Select().Where(handsome.DateOfBirthIsNot(&now)).Or(handsome.SalaryIs(10.2, 100.2)).And(handsome.LoginNotLike("%P1")).Render())
 	}
 }
 
