@@ -11,15 +11,14 @@ import (
 	"github.com/less-leg/generator"
 	"github.com/less-leg/utils"
 	"io"
-	"github.com/less-leg/dbmodel/lolsql/person"
 )
 
 func main() {
-	generate := false
+	generate := true
 
 	if generate {
 		packageDir := "github.com/less-leg/dbmodel"
-		sourceDir := "D:/workspace/GoProjects/lolsql/src"
+		sourceDir := "D:/projects/less-leg/src"
 		parsedStructs := parser.Parse(packageDir, sourceDir)
 		lolDirPath := createDirectory(filepath.Join(sourceDir, packageDir, "lolsql"))
 		pckgDef := parser.NewPackageDefinition(lolDirPath, parsedStructs)
@@ -28,34 +27,37 @@ func main() {
 	} else {
 		TestAllThatShit()
 
-		ids := []int{10, 102}
-		fmt.Println(
-			person.Select(
-				person.Id(), person.Name_FirstName(), person.Name_MiddleName()).
-			//Where(person.IdIs().And(person.IdIs(&ids[0], &ids[1]))).Render())
-			Where(person.IdIs(1).And(person.IdIs(ids[0], ids[1]))).Render())
+		//ids := []int{10, 102}
+		//fmt.Println(
+		//	person.Select(
+		//		person.Id(), person.Name_FirstName(), person.Name_MiddleName()).
+		//	//Where(person.IdIs().And(person.IdIs(&ids[0], &ids[1]))).Render())
+		//	Where(person.IdIs(1).And(person.IdIs(ids[0], ids[1]))).Render())
+		//
+		//now := time.Now()
+		//fmt.Println(handsome.Select().Where(handsome.DateOfBirthIsNot(&now)).Or(handsome.SalaryIs(10.2, 100.2)).Render())
 	}
 }
 
 func generateLol(pckgDef *parser.PackageDefinition) {
-	for structName, structDefinition := range pckgDef.StructDefinitions {
-		switch sdef := structDefinition.(type) {
+	for structName, sdef := range pckgDef.StructDefinitions {
+		switch sdef := sdef.(type) {
 		case *parser.TableStructDefinition:
-
 			structNameLowCase := strings.ToLower(structName)
 			entPackageDirPath := createDirectory(filepath.Join(pckgDef.PackageDirPath, structNameLowCase))
 			entityFile := createEntityFile(entPackageDirPath, structNameLowCase)
 
 			generator.Package.ExecuteTemplate(entityFile, "", structNameLowCase)
-			generator.Imports.ExecuteTemplate(entityFile, "",
-				`. "github.com/less-leg/types"
-				"strings"
-				"strconv"`)
+			generator.Imports.ExecuteTemplate(entityFile, "", append([]string{
+				`. "github.com/less-leg/types"`,
+				`"strings"`,
+				`"strconv"`,
+				`"github.com/less-leg/utils"`},
+				utils.DoubleQuote(sdef.Selectors()...)...))
 			generator.Column_interface.ExecuteTemplate(entityFile, "", nil)
-			generator.Lol_struct.ExecuteTemplate(entityFile, "", &parser.TupleStringString{
+			generator.Lol_struct.ExecuteTemplate(entityFile, "", []string{
 				sdef.TableName,
-				strings.Join(pckgDef.ColumnNames(structName), ", "),
-			})
+				strings.Join(pckgDef.ColumnNames(structName), ", ")})
 			generator.Select_func.ExecuteTemplate(entityFile, "", nil)
 			generator.LolWhere_struct.ExecuteTemplate(entityFile, "", nil)
 			generator.LolConditionAnd_struct.ExecuteTemplate(entityFile, "", nil)
@@ -63,34 +65,6 @@ func generateLol(pckgDef *parser.PackageDefinition) {
 			generator.ColumnStub_struct.ExecuteTemplate(entityFile, "", pckgDef.FieldsToColumns(structName))
 
 			generateFields(entityFile, pckgDef, sdef)
-
-			//for _, fdef := range sdef.FieldDefinitions() {
-			//	switch fdef := fdef.(type) {
-			//	case *parser.SimpleFieldDefinition:
-			//		if tmpl, found := generator.Conditions[fdef.FieldType.Name()]; found {
-			//			tmpl.ExecuteTemplate(entityFile, "", struct {
-			//				StructName string
-			//				TypeName string
-			//				FieldToColumn parser.TupleStringString
-			//				IsNullable string
-			//			}{
-			//				StructName:structName,
-			//				TypeName: fdef.FieldType.Name(),
-			//				FieldToColumn:parser.TupleStringString{Value1:fdef.Name(), Value2:fdef.ColumnName},
-			//				IsNullable: fdef.FieldType.PtrSign(),
-			//			})
-			//		} else {
-			//			panic("Generation template doesn't exist for type: " + fdef.String())
-			//		}
-			//
-			//	case *parser.ComplexFieldDefinition:
-			//		if fdef.Embedded {
-			//			if embdStrtDef, found := pckgDef.StructDefinitions[fdef.Name()]; found {
-			//				generateFields()
-			//			}
-			//		}
-			//	}
-			//}
 			utils.PanicIf(entityFile.Close())
 		case *parser.EmbeddedStructDefinition:
 		default:
@@ -103,22 +77,19 @@ func generateFields(entityFile io.Writer, pckgDef *parser.PackageDefinition, sde
 	for _, fdef := range sdef.FieldDefinitions() {
 		switch fdef := fdef.(type) {
 		case *parser.SimpleFieldDefinition:
-			if tmpl, found := generator.Conditions[fdef.FieldType.Name()]; found {
-				tmpl.ExecuteTemplate(entityFile, "", struct {
-					StructName string
-					TypeName string
-					FieldToColumn parser.TupleStringString
-					IsNullable string
-				}{
-					StructName:sdef.Name(),
-					TypeName: fdef.FieldType.Name(),
-					FieldToColumn:parser.TupleStringString{Value1:fdef.Name(), Value2:fdef.ColumnName},
-					IsNullable: fdef.FieldType.PtrSign(),
-				})
-			} else {
-				panic("Generation template doesn't exist for type: " + fdef.String())
-			}
-
+			generator.ConditionByField.ExecuteTemplate(entityFile, "", struct {
+				TypeName string
+				StructName string
+				IsNullable string
+				FieldToColumn []string
+				ValueToStringFunc generator.ValueToStringFunc
+			}{
+				TypeName:   fdef.FieldType().Name(),
+				StructName: sdef.Name(),
+				IsNullable: fdef.FieldType().PtrSign(),
+				FieldToColumn: []string{fdef.Name(), fdef.ColumnName},
+				ValueToStringFunc: generator.ValueToStringFuncs.Get(fdef.FieldType().Name()),
+			})
 		case *parser.ComplexFieldDefinition:
 			if fdef.Embedded {
 				if embdStrtDef, found := pckgDef.StructDefinitions[fdef.Name()]; found {
