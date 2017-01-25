@@ -5,8 +5,6 @@ import (
 
 "strings"
 
-"strconv"
-
 "github.com/less-leg/utils"
 
 "time"
@@ -70,7 +68,7 @@ func (this *lolWhere) And(cond LolCondition) *lolWhere {
 	if this.next == nil {
 		this.next = make([]LolCondition, 0, 1)
 	}
-	this.next = append(this.next, &lolConditionAnd{condition: cond})
+	this.next = append(this.next, &lolConditionAnd{LolCondition: cond})
 	return this
 }
 
@@ -78,17 +76,17 @@ func (this *lolWhere) Or(cond LolCondition) *lolWhere {
 	if this.next == nil {
 		this.next = make([]LolCondition, 0, 1)
 	}
-	this.next = append(this.next, &lolConditionOr{condition: cond})
+	this.next = append(this.next, &lolConditionOr{LolCondition: cond})
 	return this
 }
 
 type lolConditionAnd struct {
 	HasNext
-	condition LolCondition
+	LolCondition
 }
 
 func (this *lolConditionAnd) render() string {
-	return "and (" + this.condition.Render() + ")"
+	return "and (" + this.LolCondition.Render() + ")"
 }
 
 func (this *lolConditionAnd) Render() string {
@@ -99,22 +97,30 @@ func (this *lolConditionAnd) Render() string {
 }
 
 func (this *lolConditionAnd) And(cond LolCondition) LolCondition {
-	this.SetNext(&lolConditionAnd{condition:cond})
+	this.SetNext(&lolConditionAnd{LolCondition:cond})
 	return this
 }
 
 func (this *lolConditionAnd) Or(cond LolCondition) LolCondition {
-	this.SetNext(&lolConditionOr{condition:cond})
+	this.SetNext(&lolConditionOr{LolCondition:cond})
 	return this
+}
+
+func (this *lolConditionAnd) Next() LolCondition {
+	return this.HasNext.Next()
+}
+
+func (this *lolConditionAnd) SetNext(n LolCondition) {
+	this.HasNext.SetNext(n)
 }
 
 type lolConditionOr struct {
 	HasNext
-	condition LolCondition
+	LolCondition
 }
 
 func (this *lolConditionOr) render() string {
-	return "or (" + this.condition.Render() + ")"
+	return "or (" + this.LolCondition.Render() + ")"
 }
 
 func (this *lolConditionOr) Render() string {
@@ -125,13 +131,21 @@ func (this *lolConditionOr) Render() string {
 }
 
 func (this *lolConditionOr) And(cond LolCondition) LolCondition {
-	this.SetNext(&lolConditionAnd{condition:cond})
+	this.SetNext(&lolConditionAnd{LolCondition:cond})
 	return this
 }
 
 func (this *lolConditionOr) Or(cond LolCondition) LolCondition {
-	this.SetNext(&lolConditionOr{condition:cond})
+	this.SetNext(&lolConditionOr{LolCondition:cond})
 	return this
+}
+
+func (this *lolConditionOr) Next() LolCondition {
+	return this.HasNext.Next()
+}
+
+func (this *lolConditionOr) SetNext(n LolCondition) {
+	this.HasNext.SetNext(n)
 }
 
 
@@ -157,62 +171,21 @@ func (*salaryStub) Column() string {return "Salary"}
 
 
 type loginHandsome struct {
+	loginStub
 	HasNext
-	values []string
-	not    bool
-	like   bool
+	values   []string
+	operation ConditionConstant
 }
 
-const (
-	_ = 1 << (10 * iota)
-	Single
-	Multi
-	Not
-	Like
-	Equal
-)
-var comparisons = map[int]string {
-	Single & Equal: "=",
-	Single & Not & Equal: "<>",
-	Single & Like: "like",
-	Single & Not & Like: "not like",
+func (this *loginHandsome) Values() []string {
+	return this.values
 }
 
 func (this *loginHandsome) render() string {
-	var comparison string
-	multi := len(this.values) > 1
-	switch {
-	case len(this.values) == 0 && !this.not:
-		comparison = "is"
-	case len(this.values) == 0 && this.not:
-		comparison = "is not"
-	case multi && !this.not:
-		comparison = "in"
-	case multi && this.not:
-		comparison = "not in"
-	case !multi && this.not && this.like:
-		comparison = "not like"
-	case !multi && !this.not && this.like:
-		comparison = "like"
-	case !multi && this.not && !this.like:
-		comparison = "<>"
-	case !multi && !this.not && !this.like:
-		comparison = "="
+	if conditionRendering, found := ConditionRenderingMap[this.operation]["string"]; found {
+		return conditionRendering(this)
 	}
-
-	value := "null"
-	switch len(this.values) {
-	case 0:
-	case 1:
-		value = utils.Quote(this.values[0])
-	default:
-		vstr := make([]string, 0, len(this.values))
-		for _, vptr := range this.values {
-			vstr = append(vstr, utils.Quote(vptr))
-		}
-		value = " (" + strings.Join(vstr, ", ") + ")"
-	}
-	return strings.Join([]string{"USER_LOGIN", comparison, value}, " ")
+	panic("Not supported operation for: string")
 }
 
 func (this *loginHandsome) Render() string {
@@ -223,68 +196,77 @@ func (this *loginHandsome) Render() string {
 }
 
 func (this *loginHandsome) And(cond LolCondition) LolCondition {
-	this.SetNext(&lolConditionAnd{condition:cond})
+	this.SetNext(&lolConditionAnd{LolCondition:cond})
 	return this
 }
 
 func (this *loginHandsome) Or(cond LolCondition) LolCondition {
-	this.SetNext(&lolConditionOr{condition:cond})
+	this.SetNext(&lolConditionOr{LolCondition:cond})
 	return this
 }
 
-
 func LoginIs(v0 string, vnext ...string) LolCondition {
-	return &loginHandsome{values:append([]string{v0}, vnext...)}
+	amount := Single
+	counter := len(vnext)
+	if counter > 0 {
+		amount = Multi
+	}
+	buf := make([]string, 0, 1 + counter)
+	buf = append(buf, v0)
+	return &loginHandsome{values:append(buf, vnext...), operation:amount | Equals}
 }
 
 func LoginIsNot(v0 string, vnext ...string) LolCondition {
-	return &loginHandsome{values:append([]string{v0}, vnext...), not:true}
+	amount := Single
+	counter := len(vnext)
+	if counter > 0 {
+		amount = Multi
+	}
+	buf := make([]string, 0, 1 + counter)
+	buf = append(buf, v0)
+	return &loginHandsome{values:append(buf, vnext...), operation:amount | Not | Equals}
 }
 
+
 func LoginLike(v0 string, vnext ...string) LolCondition {
-	return &loginHandsome{values:append([]string{v0}, vnext...), like:true}
+	amount := Single
+	counter := len(vnext)
+	if counter > 0 {
+		amount = Multi
+	}
+	buf := make([]string, 0, 1 + counter)
+	buf = append(buf, v0)
+	return &loginHandsome{values:append(buf, vnext...), operation:amount | Like}
 }
 
 func LoginNotLike(v0 string, vnext ...string) LolCondition {
-	return &loginHandsome{values:append([]string{v0}, vnext...), like:true, not:true}
+	amount := Single
+	counter := len(vnext)
+	if counter > 0 {
+		amount = Multi
+	}
+	buf := make([]string, 0, 1 + counter)
+	buf = append(buf, v0)
+	return &loginHandsome{values:append(buf, vnext...), operation: amount | Not | Like}
 }
 
+
 type passwordHandsome struct {
+	passwordStub
 	HasNext
-	values    []*int64
-	checkNot bool
+	values   []*int64
+	operation ConditionConstant
+}
+
+func (this *passwordHandsome) Values() []*int64 {
+	return this.values
 }
 
 func (this *passwordHandsome) render() string {
-	
-	if this.values == nil || len(this.values) == 0 {
-		if this.checkNot {
-			return "SECRET is not null"
-		} else {
-			return "SECRET is null"
-		}
+	if conditionRendering, found := ConditionRenderingMap[this.operation]["*int64"]; found {
+		return conditionRendering(this)
 	}
-	
-	if (len(this.values) == 1) {
-		if this.checkNot {
-			return "SECRET <> " + strconv.FormatInt(*this.values[0], 10)
-		} else {
-			return "SECRET = " + strconv.FormatInt(*this.values[0], 10)
-		}
-	}
-	vstr := make([]string, 0, len(this.values))
-	for _, vptr := range this.values {
-		
-		if vptr != nil {
-			vstr = append(vstr, strconv.FormatInt(*vptr, 10))
-		}
-		
-	}
-	if this.checkNot {
-		return "SECRET not in (" + strings.Join(vstr, ", ") + ")"
-	} else {
-		return "SECRET in (" + strings.Join(vstr, ", ") + ")"
-	}
+	panic("Not supported operation for: int64")
 }
 
 func (this *passwordHandsome) Render() string {
@@ -295,61 +277,55 @@ func (this *passwordHandsome) Render() string {
 }
 
 func (this *passwordHandsome) And(cond LolCondition) LolCondition {
-	this.SetNext(&lolConditionAnd{condition:cond})
+	this.SetNext(&lolConditionAnd{LolCondition:cond})
 	return this
 }
 
 func (this *passwordHandsome) Or(cond LolCondition) LolCondition {
-	this.SetNext(&lolConditionOr{condition:cond})
+	this.SetNext(&lolConditionOr{LolCondition:cond})
 	return this
 }
 
-
-func PasswordIs(value ...*int64) LolCondition {
-	return &passwordHandsome{values:value}
+func PasswordIs(v0 *int64, vnext ...*int64) LolCondition {
+	amount := Single
+	counter := len(vnext)
+	if counter > 0 {
+		amount = Multi
+	}
+	buf := make([]*int64, 0, 1 + counter)
+	buf = append(buf, v0)
+	return &passwordHandsome{values:append(buf, vnext...), operation:amount | Equals}
 }
 
-func PasswordIsNot(values ...*int64) LolCondition {
-	return &passwordHandsome{values:values, checkNot: true}
+func PasswordIsNot(v0 *int64, vnext ...*int64) LolCondition {
+	amount := Single
+	counter := len(vnext)
+	if counter > 0 {
+		amount = Multi
+	}
+	buf := make([]*int64, 0, 1 + counter)
+	buf = append(buf, v0)
+	return &passwordHandsome{values:append(buf, vnext...), operation:amount | Not | Equals}
 }
+
 
 
 type dateofbirthHandsome struct {
+	dateofbirthStub
 	HasNext
-	values    []*time.Time
-	checkNot bool
+	values   []*time.Time
+	operation ConditionConstant
+}
+
+func (this *dateofbirthHandsome) Values() []*time.Time {
+	return this.values
 }
 
 func (this *dateofbirthHandsome) render() string {
-	
-	if this.values == nil || len(this.values) == 0 {
-		if this.checkNot {
-			return "DateOfBirth is not null"
-		} else {
-			return "DateOfBirth is null"
-		}
+	if conditionRendering, found := ConditionRenderingMap[this.operation]["*time.Time"]; found {
+		return conditionRendering(this)
 	}
-	
-	if (len(this.values) == 1) {
-		if this.checkNot {
-			return "DateOfBirth <> " + utils.Quote((*this.values[0]).Format("2006-01-02 15:04:05"))
-		} else {
-			return "DateOfBirth = " + utils.Quote((*this.values[0]).Format("2006-01-02 15:04:05"))
-		}
-	}
-	vstr := make([]string, 0, len(this.values))
-	for _, vptr := range this.values {
-		
-		if vptr != nil {
-			vstr = append(vstr, utils.Quote((*vptr).Format("2006-01-02 15:04:05")))
-		}
-		
-	}
-	if this.checkNot {
-		return "DateOfBirth not in (" + strings.Join(vstr, ", ") + ")"
-	} else {
-		return "DateOfBirth in (" + strings.Join(vstr, ", ") + ")"
-	}
+	panic("Not supported operation for: time.Time")
 }
 
 func (this *dateofbirthHandsome) Render() string {
@@ -360,51 +336,55 @@ func (this *dateofbirthHandsome) Render() string {
 }
 
 func (this *dateofbirthHandsome) And(cond LolCondition) LolCondition {
-	this.SetNext(&lolConditionAnd{condition:cond})
+	this.SetNext(&lolConditionAnd{LolCondition:cond})
 	return this
 }
 
 func (this *dateofbirthHandsome) Or(cond LolCondition) LolCondition {
-	this.SetNext(&lolConditionOr{condition:cond})
+	this.SetNext(&lolConditionOr{LolCondition:cond})
 	return this
 }
 
-
-func DateOfBirthIs(value ...*time.Time) LolCondition {
-	return &dateofbirthHandsome{values:value}
+func DateOfBirthIs(v0 *time.Time, vnext ...*time.Time) LolCondition {
+	amount := Single
+	counter := len(vnext)
+	if counter > 0 {
+		amount = Multi
+	}
+	buf := make([]*time.Time, 0, 1 + counter)
+	buf = append(buf, v0)
+	return &dateofbirthHandsome{values:append(buf, vnext...), operation:amount | Equals}
 }
 
-func DateOfBirthIsNot(values ...*time.Time) LolCondition {
-	return &dateofbirthHandsome{values:values, checkNot: true}
+func DateOfBirthIsNot(v0 *time.Time, vnext ...*time.Time) LolCondition {
+	amount := Single
+	counter := len(vnext)
+	if counter > 0 {
+		amount = Multi
+	}
+	buf := make([]*time.Time, 0, 1 + counter)
+	buf = append(buf, v0)
+	return &dateofbirthHandsome{values:append(buf, vnext...), operation:amount | Not | Equals}
 }
+
 
 
 type salaryHandsome struct {
+	salaryStub
 	HasNext
-	values    []float32
-	checkNot bool
+	values   []float32
+	operation ConditionConstant
+}
+
+func (this *salaryHandsome) Values() []float32 {
+	return this.values
 }
 
 func (this *salaryHandsome) render() string {
-	
-	if (len(this.values) == 1) {
-		if this.checkNot {
-			return "Salary <> " + strconv.FormatFloat(float64(this.values[0]), 'f', -1, 32)
-		} else {
-			return "Salary = " + strconv.FormatFloat(float64(this.values[0]), 'f', -1, 32)
-		}
+	if conditionRendering, found := ConditionRenderingMap[this.operation]["float32"]; found {
+		return conditionRendering(this)
 	}
-	vstr := make([]string, 0, len(this.values))
-	for _, vptr := range this.values {
-		
-			vstr = append(vstr, strconv.FormatFloat(float64(vptr), 'f', -1, 32))
-		
-	}
-	if this.checkNot {
-		return "Salary not in (" + strings.Join(vstr, ", ") + ")"
-	} else {
-		return "Salary in (" + strings.Join(vstr, ", ") + ")"
-	}
+	panic("Not supported operation for: float32")
 }
 
 func (this *salaryHandsome) Render() string {
@@ -415,21 +395,35 @@ func (this *salaryHandsome) Render() string {
 }
 
 func (this *salaryHandsome) And(cond LolCondition) LolCondition {
-	this.SetNext(&lolConditionAnd{condition:cond})
+	this.SetNext(&lolConditionAnd{LolCondition:cond})
 	return this
 }
 
 func (this *salaryHandsome) Or(cond LolCondition) LolCondition {
-	this.SetNext(&lolConditionOr{condition:cond})
+	this.SetNext(&lolConditionOr{LolCondition:cond})
 	return this
 }
 
-
 func SalaryIs(v0 float32, vnext ...float32) LolCondition {
-	return &salaryHandsome{values:append([]float32{v0}, vnext...)}
+	amount := Single
+	counter := len(vnext)
+	if counter > 0 {
+		amount = Multi
+	}
+	buf := make([]float32, 0, 1 + counter)
+	buf = append(buf, v0)
+	return &salaryHandsome{values:append(buf, vnext...), operation:amount | Equals}
 }
 
 func SalaryIsNot(v0 float32, vnext ...float32) LolCondition {
-	return &salaryHandsome{values:append([]float32{v0}, vnext...), checkNot: true}
+	amount := Single
+	counter := len(vnext)
+	if counter > 0 {
+		amount = Multi
+	}
+	buf := make([]float32, 0, 1 + counter)
+	buf = append(buf, v0)
+	return &salaryHandsome{values:append(buf, vnext...), operation:amount | Not | Equals}
 }
+
 
