@@ -261,11 +261,11 @@ func {{index .FieldToColumn 0 | Title}}IsNot(values ...{{.IsNullable}}{{.TypeNam
 	return &{{index .FieldToColumn 0 | ToLower}}{{Title .StructName}}{values:values, checkNot: true}
 }
 {{else}}
-func {{index .FieldToColumn 0 | Title}}Is(v0 {{.TypeName}}, vnext ...{{.IsNullable}}{{.TypeName}}) LolCondition {
+func {{index .FieldToColumn 0 | Title}}Is(v0 {{.TypeName}}, vnext ...{{.TypeName}}) LolCondition {
 	return &{{index .FieldToColumn 0 | ToLower}}{{Title .StructName}}{values:append([]{{.TypeName}}{v0}, vnext...)}
 }
 
-func {{index .FieldToColumn 0 | Title}}IsNot(v0 {{.TypeName}}, vnext ...{{.IsNullable}}{{.TypeName}}) LolCondition {
+func {{index .FieldToColumn 0 | Title}}IsNot(v0 {{.TypeName}}, vnext ...{{.TypeName}}) LolCondition {
 	return &{{index .FieldToColumn 0 | ToLower}}{{Title .StructName}}{values:append([]{{.TypeName}}{v0}, vnext...), checkNot: true}
 }
 {{end}}

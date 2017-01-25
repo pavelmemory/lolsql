@@ -145,6 +145,204 @@ const (
 	Equals
 )
 
+func DefineAmountStrings(vnext []string) ConditionConstant {
+	switch len(vnext) + 1 {
+	case 0:
+		panic("Unreachable code")
+	case 1:
+		return Single
+	default:
+		return Multi
+	}
+}
+
+func DefineAmountStringPtrs(values []*string) ConditionConstant {
+	switch len(values) {
+	case 0:
+		return Null
+	case 1:
+		return Single
+	default:
+		return Multi
+	}
+}
+
+func DefineAmountInts(vnext []int) ConditionConstant {
+	switch len(vnext) + 1 {
+	case 0:
+		panic("Unreachable code")
+	case 1:
+		return Single
+	default:
+		return Multi
+	}
+}
+
+func DefineAmountIntPtrs(vnext []*int) ConditionConstant {
+	switch len(vnext) + 1 {
+	case 0:
+		panic("Unreachable code")
+	case 1:
+		return Single
+	default:
+		return Multi
+	}
+}
+
+func DefineAmountInt8s(vnext []int8) ConditionConstant {
+	switch len(vnext) + 1 {
+	case 0:
+		panic("Unreachable code")
+	case 1:
+		return Single
+	default:
+		return Multi
+	}
+}
+
+func DefineAmountInt8Ptrs(vnext []*int8) ConditionConstant {
+	switch len(vnext) + 1 {
+	case 0:
+		panic("Unreachable code")
+	case 1:
+		return Single
+	default:
+		return Multi
+	}
+}
+
+func DefineAmountInt16s(vnext []int16) ConditionConstant {
+	switch len(vnext) + 1 {
+	case 0:
+		panic("Unreachable code")
+	case 1:
+		return Single
+	default:
+		return Multi
+	}
+}
+
+func DefineAmountInt16Ptrs(vnext []*int16) ConditionConstant {
+	switch len(vnext) + 1 {
+	case 0:
+		panic("Unreachable code")
+	case 1:
+		return Single
+	default:
+		return Multi
+	}
+}
+
+func DefineAmountInt32s(vnext []int32) ConditionConstant {
+	switch len(vnext) + 1 {
+	case 0:
+		panic("Unreachable code")
+	case 1:
+		return Single
+	default:
+		return Multi
+	}
+}
+
+func DefineAmountInt32Ptrs(vnext []*int32) ConditionConstant {
+	switch len(vnext) + 1 {
+	case 0:
+		panic("Unreachable code")
+	case 1:
+		return Single
+	default:
+		return Multi
+	}
+}
+
+func DefineAmountInt64s(vnext []int64) ConditionConstant {
+	switch len(vnext) + 1 {
+	case 0:
+		panic("Unreachable code")
+	case 1:
+		return Single
+	default:
+		return Multi
+	}
+}
+
+func DefineAmountInt64Ptrs(vnext []*int64) ConditionConstant {
+	switch len(vnext) + 1 {
+	case 0:
+		panic("Unreachable code")
+	case 1:
+		return Single
+	default:
+		return Multi
+	}
+}
+
+func DefineAmountFloat32s(vnext []float32) ConditionConstant {
+	switch len(vnext) + 1 {
+	case 0:
+		panic("Unreachable code")
+	case 1:
+		return Single
+	default:
+		return Multi
+	}
+}
+
+func DefineAmountFloat32Ptrs(vnext []*float32) ConditionConstant {
+	switch len(vnext) + 1 {
+	case 0:
+		panic("Unreachable code")
+	case 1:
+		return Single
+	default:
+		return Multi
+	}
+}
+
+func DefineAmountFloat64s(vnext []float64) ConditionConstant {
+	switch len(vnext) + 1 {
+	case 0:
+		panic("Unreachable code")
+	case 1:
+		return Single
+	default:
+		return Multi
+	}
+}
+
+func DefineAmountFloat64Ptrs(vnext []*float64) ConditionConstant {
+	switch len(vnext) + 1 {
+	case 0:
+		panic("Unreachable code")
+	case 1:
+		return Single
+	default:
+		return Multi
+	}
+}
+
+func DefineAmountTime_Times(vnext []time.Time) ConditionConstant {
+	switch len(vnext) + 1 {
+	case 0:
+		panic("Unreachable code")
+	case 1:
+		return Single
+	default:
+		return Multi
+	}
+}
+
+func DefineAmountTime_TimePtrs(vnext []*time.Time) ConditionConstant {
+	switch len(vnext) + 1 {
+	case 0:
+		panic("Unreachable code")
+	case 1:
+		return Single
+	default:
+		return Multi
+	}
+}
+
 func renderEqualsNull(condition interface{}) string {
 	return condition.(SelectColumn).Column() + " is null"
 }

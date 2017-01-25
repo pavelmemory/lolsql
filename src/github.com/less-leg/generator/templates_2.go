@@ -218,49 +218,39 @@ func (this *{{index .FieldToColumn 0 | ToLower}}{{Title .StructName}}) Or(cond L
 	return this
 }
 
+{{if .IsNullable}}
+func {{index .FieldToColumn 0 | Title}}Is(values ...{{.IsNullable}}{{.TypeName}}) LolCondition {
+	return &{{index .FieldToColumn 0 | ToLower}}{{Title .StructName}}{values:values, operation:DefineAmount{{Title .TypeName | DotToUnderscore}}Ptrs(values) | Equals}
+}
+
+func {{index .FieldToColumn 0 | Title}}IsNot(values ...{{.IsNullable}}{{.TypeName}}) LolCondition {
+	return &{{index .FieldToColumn 0 | ToLower}}{{Title .StructName}}{values:values, operation:DefineAmount{{Title .TypeName | DotToUnderscore}}Ptrs(values) | Not | Equals}
+}
+{{else}}
 func {{index .FieldToColumn 0 | Title}}Is(v0 {{.IsNullable}}{{.TypeName}}, vnext ...{{.IsNullable}}{{.TypeName}}) LolCondition {
-	amount := Single
-	counter := len(vnext)
-	if counter > 0 {
-		amount = Multi
-	}
-	buf := make([]{{.IsNullable}}{{.TypeName}}, 0, 1 + counter)
-	buf = append(buf, v0)
-	return &{{index .FieldToColumn 0 | ToLower}}{{Title .StructName}}{values:append(buf, vnext...), operation:amount | Equals}
+	return &{{index .FieldToColumn 0 | ToLower}}{{Title .StructName}}{values:utils.Prepend{{Title .TypeName}}(v0, vnext), operation:DefineAmount{{Title .TypeName | DotToUnderscore}}s(vnext) | Not | Equals}
 }
 
 func {{index .FieldToColumn 0 | Title}}IsNot(v0 {{.IsNullable}}{{.TypeName}}, vnext ...{{.IsNullable}}{{.TypeName}}) LolCondition {
-	amount := Single
-	counter := len(vnext)
-	if counter > 0 {
-		amount = Multi
-	}
-	buf := make([]{{.IsNullable}}{{.TypeName}}, 0, 1 + counter)
-	buf = append(buf, v0)
-	return &{{index .FieldToColumn 0 | ToLower}}{{Title .StructName}}{values:append(buf, vnext...), operation:amount | Not | Equals}
-}
-
-{{if .Likable}}
-func {{index .FieldToColumn 0 | Title}}Like(v0 {{.IsNullable}}{{.TypeName}}, vnext ...{{.IsNullable}}{{.TypeName}}) LolCondition {
-	amount := Single
-	counter := len(vnext)
-	if counter > 0 {
-		amount = Multi
-	}
-	buf := make([]{{.IsNullable}}{{.TypeName}}, 0, 1 + counter)
-	buf = append(buf, v0)
-	return &{{index .FieldToColumn 0 | ToLower}}{{Title .StructName}}{values:append(buf, vnext...), operation:amount | Like}
-}
-
-func {{index .FieldToColumn 0 | Title}}NotLike(v0 {{.IsNullable}}{{.TypeName}}, vnext ...{{.IsNullable}}{{.TypeName}}) LolCondition {
-	amount := Single
-	counter := len(vnext)
-	if counter > 0 {
-		amount = Multi
-	}
-	buf := make([]{{.IsNullable}}{{.TypeName}}, 0, 1 + counter)
-	buf = append(buf, v0)
-	return &{{index .FieldToColumn 0 | ToLower}}{{Title .StructName}}{values:append(buf, vnext...), operation: amount | Not | Like}
+	return &{{index .FieldToColumn 0 | ToLower}}{{Title .StructName}}{values:utils.Prepend{{Title .TypeName}}(v0, vnext), operation:DefineAmount{{Title .TypeName | DotToUnderscore}}s(vnext) | Not | Equals}
 }
 {{end}}
+
+{{if .Likable}}{{if .IsNullable}}
+func {{index .FieldToColumn 0 | Title}}Like(values ...{{.IsNullable}}{{.TypeName}}) LolCondition {
+	return &{{index .FieldToColumn 0 | ToLower}}{{Title .StructName}}{values:values, operation: DefineAmount{{Title .TypeName | DotToUnderscore}}Ptrs(values) | Like}
+}
+
+func {{index .FieldToColumn 0 | Title}}NotLike(values ...{{.IsNullable}}{{.TypeName}}) LolCondition {
+	return &{{index .FieldToColumn 0 | ToLower}}{{Title .StructName}}{values:values, operation: DefineAmount{{Title .TypeName | DotToUnderscore}}Ptrs(values) | Not | Like}
+}
+{{else}}
+func {{index .FieldToColumn 0 | Title}}Like(v0 {{.TypeName}}, vnext ...{{.TypeName}}) LolCondition {
+	return &{{index .FieldToColumn 0 | ToLower}}{{Title .StructName}}{values:utils.PrependString(v0, vnext), operation:DefineAmount{{Title .TypeName | DotToUnderscore}}s(vnext) | Like}
+}
+
+func {{index .FieldToColumn 0 | Title}}NotLike(v0 {{.TypeName}}, vnext ...{{.TypeName}}) LolCondition {
+	return &{{index .FieldToColumn 0 | ToLower}}{{Title .StructName}}{values:utils.PrependString(v0, vnext), operation:DefineAmount{{Title .TypeName | DotToUnderscore}}s(vnext) | Not | Like}
+}
+{{end}}{{end}}
 `)

@@ -205,49 +205,23 @@ func (this *loginHandsome) Or(cond LolCondition) LolCondition {
 	return this
 }
 
+
 func LoginIs(v0 string, vnext ...string) LolCondition {
-	amount := Single
-	counter := len(vnext)
-	if counter > 0 {
-		amount = Multi
-	}
-	buf := make([]string, 0, 1 + counter)
-	buf = append(buf, v0)
-	return &loginHandsome{values:append(buf, vnext...), operation:amount | Equals}
+	return &loginHandsome{values:utils.PrependString(v0, vnext), operation:DefineAmountStrings(vnext) | Not | Equals}
 }
 
 func LoginIsNot(v0 string, vnext ...string) LolCondition {
-	amount := Single
-	counter := len(vnext)
-	if counter > 0 {
-		amount = Multi
-	}
-	buf := make([]string, 0, 1 + counter)
-	buf = append(buf, v0)
-	return &loginHandsome{values:append(buf, vnext...), operation:amount | Not | Equals}
+	return &loginHandsome{values:utils.PrependString(v0, vnext), operation:DefineAmountStrings(vnext) | Not | Equals}
 }
+
 
 
 func LoginLike(v0 string, vnext ...string) LolCondition {
-	amount := Single
-	counter := len(vnext)
-	if counter > 0 {
-		amount = Multi
-	}
-	buf := make([]string, 0, 1 + counter)
-	buf = append(buf, v0)
-	return &loginHandsome{values:append(buf, vnext...), operation:amount | Like}
+	return &loginHandsome{values:utils.PrependString(v0, vnext), operation:DefineAmountStrings(vnext) | Like}
 }
 
 func LoginNotLike(v0 string, vnext ...string) LolCondition {
-	amount := Single
-	counter := len(vnext)
-	if counter > 0 {
-		amount = Multi
-	}
-	buf := make([]string, 0, 1 + counter)
-	buf = append(buf, v0)
-	return &loginHandsome{values:append(buf, vnext...), operation: amount | Not | Like}
+	return &loginHandsome{values:utils.PrependString(v0, vnext), operation:DefineAmountStrings(vnext) | Not | Like}
 }
 
 
@@ -286,27 +260,15 @@ func (this *passwordHandsome) Or(cond LolCondition) LolCondition {
 	return this
 }
 
-func PasswordIs(v0 *int64, vnext ...*int64) LolCondition {
-	amount := Single
-	counter := len(vnext)
-	if counter > 0 {
-		amount = Multi
-	}
-	buf := make([]*int64, 0, 1 + counter)
-	buf = append(buf, v0)
-	return &passwordHandsome{values:append(buf, vnext...), operation:amount | Equals}
+
+func PasswordIs(values ...*int64) LolCondition {
+	return &passwordHandsome{values:values, operation:DefineAmountInt64Ptrs(values) | Equals}
 }
 
-func PasswordIsNot(v0 *int64, vnext ...*int64) LolCondition {
-	amount := Single
-	counter := len(vnext)
-	if counter > 0 {
-		amount = Multi
-	}
-	buf := make([]*int64, 0, 1 + counter)
-	buf = append(buf, v0)
-	return &passwordHandsome{values:append(buf, vnext...), operation:amount | Not | Equals}
+func PasswordIsNot(values ...*int64) LolCondition {
+	return &passwordHandsome{values:values, operation:DefineAmountInt64Ptrs(values) | Not | Equals}
 }
+
 
 
 
@@ -345,27 +307,15 @@ func (this *dateofbirthHandsome) Or(cond LolCondition) LolCondition {
 	return this
 }
 
-func DateOfBirthIs(v0 *time.Time, vnext ...*time.Time) LolCondition {
-	amount := Single
-	counter := len(vnext)
-	if counter > 0 {
-		amount = Multi
-	}
-	buf := make([]*time.Time, 0, 1 + counter)
-	buf = append(buf, v0)
-	return &dateofbirthHandsome{values:append(buf, vnext...), operation:amount | Equals}
+
+func DateOfBirthIs(values ...*time.Time) LolCondition {
+	return &dateofbirthHandsome{values:values, operation:DefineAmountTime_TimePtrs(values) | Equals}
 }
 
-func DateOfBirthIsNot(v0 *time.Time, vnext ...*time.Time) LolCondition {
-	amount := Single
-	counter := len(vnext)
-	if counter > 0 {
-		amount = Multi
-	}
-	buf := make([]*time.Time, 0, 1 + counter)
-	buf = append(buf, v0)
-	return &dateofbirthHandsome{values:append(buf, vnext...), operation:amount | Not | Equals}
+func DateOfBirthIsNot(values ...*time.Time) LolCondition {
+	return &dateofbirthHandsome{values:values, operation:DefineAmountTime_TimePtrs(values) | Not | Equals}
 }
+
 
 
 
@@ -404,26 +354,14 @@ func (this *salaryHandsome) Or(cond LolCondition) LolCondition {
 	return this
 }
 
+
 func SalaryIs(v0 float32, vnext ...float32) LolCondition {
-	amount := Single
-	counter := len(vnext)
-	if counter > 0 {
-		amount = Multi
-	}
-	buf := make([]float32, 0, 1 + counter)
-	buf = append(buf, v0)
-	return &salaryHandsome{values:append(buf, vnext...), operation:amount | Equals}
+	return &salaryHandsome{values:utils.PrependFloat32(v0, vnext), operation:DefineAmountFloat32s(vnext) | Not | Equals}
 }
 
 func SalaryIsNot(v0 float32, vnext ...float32) LolCondition {
-	amount := Single
-	counter := len(vnext)
-	if counter > 0 {
-		amount = Multi
-	}
-	buf := make([]float32, 0, 1 + counter)
-	buf = append(buf, v0)
-	return &salaryHandsome{values:append(buf, vnext...), operation:amount | Not | Equals}
+	return &salaryHandsome{values:utils.PrependFloat32(v0, vnext), operation:DefineAmountFloat32s(vnext) | Not | Equals}
 }
+
 
 
