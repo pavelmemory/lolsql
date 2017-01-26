@@ -227,11 +227,11 @@ func {{index .FieldToColumn 0 | Title}}IsNot(values ...{{.IsNullable}}{{.TypeNam
 }
 {{else}}
 func {{index .FieldToColumn 0 | Title}}Is(v0 {{.IsNullable}}{{.TypeName}}, vnext ...{{.IsNullable}}{{.TypeName}}) LolCondition {
-	return &{{index .FieldToColumn 0 | ToLower}}{{Title .StructName}}{values:utils.Prepend{{Title .TypeName}}(v0, vnext), operation:DefineAmount(v0, vnext) | Equals}
+	return &{{index .FieldToColumn 0 | ToLower}}{{Title .StructName}}{values:utils.Prepend{{Title .TypeName | DotToUnderscore}}(v0, vnext), operation:DefineAmount(v0, vnext) | Equals}
 }
 
 func {{index .FieldToColumn 0 | Title}}IsNot(v0 {{.IsNullable}}{{.TypeName}}, vnext ...{{.IsNullable}}{{.TypeName}}) LolCondition {
-	return &{{index .FieldToColumn 0 | ToLower}}{{Title .StructName}}{values:utils.Prepend{{Title .TypeName}}(v0, vnext), operation:DefineAmount(v0, vnext) | Not | Equals}
+	return &{{index .FieldToColumn 0 | ToLower}}{{Title .StructName}}{values:utils.Prepend{{Title .TypeName | DotToUnderscore}}(v0, vnext), operation:DefineAmount(v0, vnext) | Not | Equals}
 }
 {{end}}
 

@@ -341,3 +341,10 @@ func PrependFloat64(v0 float64, vnext []float64) []float64 {
 	buf = append(buf, v0)
 	return append(buf, vnext...)
 }
+
+func PrependTime_Time(v0 time.Time, vnext []time.Time) []time.Time {
+	buf := make([]time.Time, 0, 1 + len(vnext))
+	buf = append(buf, v0)
+	return append(buf, vnext...)
+}
+
