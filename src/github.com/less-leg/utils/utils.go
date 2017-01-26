@@ -6,6 +6,8 @@ import (
 	"strconv"
 	"time"
 	"reflect"
+	"os"
+	"fmt"
 )
 
 var InvalidImportProtection = 0
@@ -14,6 +16,18 @@ func PanicIf(err error) {
 	if err != nil {
 		log.Panicln(err.Error())
 	}
+}
+
+func RecreateDirectory(fileDir string) string {
+	err := os.RemoveAll(fileDir)
+	if os.IsExist(err) {
+		panic(fmt.Sprintf("Directory %s cannot be removed: %s", fileDir, err.Error()))
+	}
+	err = os.Mkdir(fileDir, os.ModePerm)
+	if os.IsExist(err) {
+		panic(fmt.Sprintf("Directory %s cannot be created: %s", fileDir, err.Error()))
+	}
+	return fileDir
 }
 
 func Length(elememts interface{}) int {

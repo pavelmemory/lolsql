@@ -93,6 +93,29 @@ func (this *PackageDefinition) FieldsToColumns(structName string) [][]string {
 	return ftoc
 }
 
+func (this *PackageDefinition) FieldToColumn(structName string) [][]string {
+	ftoc := [][]string{}
+	if sdef, found := this.StructDefinitions[structName]; found {
+		for _, fdef := range sdef.FieldDefinitions() {
+			switch sfdef := fdef.(type) {
+			case *SimpleFieldDefinition:
+				ftoc = append(ftoc, []string{sfdef.Name(), sfdef.ColumnName})
+			case *ComplexFieldDefinition:
+				if sfdef.Embedded {
+					embftocs := this.FieldsToColumns(sfdef.name)
+					for _, embftoc := range embftocs {
+						embftoc[0] = sfdef.name + "." + embftoc[0]
+					}
+					ftoc = append(ftoc, embftocs...)
+				}
+			}
+		}
+	} else {
+		panic("Struct " + structName + " was not found among parsed structs")
+	}
+	return ftoc
+}
+
 type ParsedStruct struct {
 	Name    string
 	Type    *ast.StructType
@@ -385,46 +408,44 @@ func (this *FieldTypeDefinition) IsBasic() bool {
 }
 
 func (this *FieldTypeDefinition) String() string {
-	if this.Ptr {
+	switch {
+	case this.Ptr:
 		return "*" + this.Underlying.String()
-	}
-	if this.Slice {
+	case this.Slice:
 		return "[]" + this.Underlying.String()
-	}
-	if this.selector != "" {
+	case this.selector != "":
 		return this.selector + "." + this.Underlying.String()
-	}
-	if this.Underlying == nil {
+	case this.Underlying == nil:
 		return this.name
+	default:
+		panic("Unreachable code")
 	}
-	panic("Unreachable code")
 }
 
 func (this *FieldTypeDefinition) Name() string {
-	if this.Ptr {
+	switch {
+	case this.Ptr:
 		return this.Underlying.Name()
-	}
-	if this.Slice {
+	case this.Slice:
 		return this.Underlying.Name()
-	}
-	if this.selector != "" {
+	case this.selector != "":
 		return this.selector + "." + this.Underlying.Name()
-	}
-	if this.Underlying == nil {
+	case this.Underlying == nil:
 		return this.name
+	default:
+		panic("Unreachable code")
 	}
-	panic("Unreachable code")
 }
 
 func (this *FieldTypeDefinition) Selector() string {
-	if this.Ptr {
+	switch {
+	case this.Ptr:
 		return this.Underlying.Selector()
-	}
-	if this.Slice {
+	case this.Slice:
 		return this.Underlying.Selector()
-	}
-	if this.selector != "" {
+	case this.selector != "":
 		return this.selector
+	default:
+		return ""
 	}
-	return ""
 }

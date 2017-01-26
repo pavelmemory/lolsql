@@ -1,40 +1,10 @@
 package generator
 
 import (
-	"text/template"
-	"strings"
 	"github.com/less-leg/utils"
+	"strings"
+	"text/template"
 )
-
-type valueToStringFuncs map[string]ValueToStringFunc
-
-func (this *valueToStringFuncs)Get(typeName string) ValueToStringFunc {
-	if f, found := map[string]ValueToStringFunc(*this)[typeName]; found {
-		return f
-	} else {
-		panic("Unsopported type for string convertion: " + typeName)
-	}
-}
-
-type ValueToStringFunc struct {
-	Start string
-	End string
-}
-
-var ValueToStringFuncs = valueToStringFuncs(map[string]ValueToStringFunc{
-	"int":   ValueToStringFunc{Start:"strconv.FormatInt(int64(", End:"), 10)"},
-	"int8":  ValueToStringFunc{Start:"strconv.FormatInt(int64(", End:"), 10)"},
-	"int16": ValueToStringFunc{Start:"strconv.FormatInt(int64(", End:"), 10)"},
-	"int32": ValueToStringFunc{Start:"strconv.FormatInt(int64(", End:"), 10)"},
-	"int64": ValueToStringFunc{Start:"strconv.FormatInt(", End:", 10)"},
-
-	"float32": ValueToStringFunc{Start:"strconv.FormatFloat(float64(", End:"), 'f', -1, 32)"},
-	"float64": ValueToStringFunc{Start:"strconv.FormatFloat(", End:", 'f', -1, 64)"},
-
-	"string": ValueToStringFunc{Start:"utils.Quote(", End:")"},
-
-	"time.Time": ValueToStringFunc{Start:`utils.Quote((`, End:`).Format("2006-01-02 15:04:05"))`},
-})
 
 var Package, _ = template.New("").Parse(`package {{.}}`)
 
@@ -110,7 +80,7 @@ func (this *lolWhere) And(cond LolCondition) *lolWhere {
 	if this.next == nil {
 		this.next = make([]LolCondition, 0, 1)
 	}
-	this.next = append(this.next, &lolConditionAnd{condition: cond})
+	this.next = append(this.next, &lolConditionAnd{LolCondition: cond})
 	return this
 }
 
@@ -118,7 +88,7 @@ func (this *lolWhere) Or(cond LolCondition) *lolWhere {
 	if this.next == nil {
 		this.next = make([]LolCondition, 0, 1)
 	}
-	this.next = append(this.next, &lolConditionOr{condition: cond})
+	this.next = append(this.next, &lolConditionOr{LolCondition: cond})
 	return this
 }
 `)
@@ -126,11 +96,11 @@ func (this *lolWhere) Or(cond LolCondition) *lolWhere {
 var LolConditionAnd_struct, _ = template.New("").Parse(`
 type lolConditionAnd struct {
 	HasNext
-	condition LolCondition
+	LolCondition
 }
 
 func (this *lolConditionAnd) render() string {
-	return "and (" + this.condition.Render() + ")"
+	return "and (" + this.LolCondition.Render() + ")"
 }
 
 func (this *lolConditionAnd) Render() string {
@@ -141,24 +111,32 @@ func (this *lolConditionAnd) Render() string {
 }
 
 func (this *lolConditionAnd) And(cond LolCondition) LolCondition {
-	this.SetNext(&lolConditionAnd{condition:cond})
+	this.SetNext(&lolConditionAnd{LolCondition:cond})
 	return this
 }
 
 func (this *lolConditionAnd) Or(cond LolCondition) LolCondition {
-	this.SetNext(&lolConditionOr{condition:cond})
+	this.SetNext(&lolConditionOr{LolCondition:cond})
 	return this
+}
+
+func (this *lolConditionAnd) Next() LolCondition {
+	return this.HasNext.Next()
+}
+
+func (this *lolConditionAnd) SetNext(n LolCondition) {
+	this.HasNext.SetNext(n)
 }
 `)
 
 var LolConditionOr_struct, _ = template.New("").Parse(`
 type lolConditionOr struct {
 	HasNext
-	condition LolCondition
+	LolCondition
 }
 
 func (this *lolConditionOr) render() string {
-	return "or (" + this.condition.Render() + ")"
+	return "or (" + this.LolCondition.Render() + ")"
 }
 
 func (this *lolConditionOr) Render() string {
@@ -169,13 +147,21 @@ func (this *lolConditionOr) Render() string {
 }
 
 func (this *lolConditionOr) And(cond LolCondition) LolCondition {
-	this.SetNext(&lolConditionAnd{condition:cond})
+	this.SetNext(&lolConditionAnd{LolCondition:cond})
 	return this
 }
 
 func (this *lolConditionOr) Or(cond LolCondition) LolCondition {
-	this.SetNext(&lolConditionOr{condition:cond})
+	this.SetNext(&lolConditionOr{LolCondition:cond})
 	return this
+}
+
+func (this *lolConditionOr) Next() LolCondition {
+	return this.HasNext.Next()
+}
+
+func (this *lolConditionOr) SetNext(n LolCondition) {
+	this.HasNext.SetNext(n)
 }
 `)
 
@@ -194,45 +180,24 @@ func (*{{index . 0 | ToLower | DotToUnderscore}}Stub) Column() string {return "{
 
 var ConditionByField, _ = template.New("").Funcs(template.FuncMap{
 	"Title": strings.Title,
-	"ToLower": strings.ToLower,}).Parse(`
+	"ToLower": strings.ToLower,
+	"DotToUnderscore": utils.DotToUnderscore}).Parse(`
 type {{index .FieldToColumn 0 | ToLower}}{{Title .StructName}} struct {
+	{{ToLower .Selector}}{{if .Selector}}_{{end}}{{index .FieldToColumn 0 | ToLower | DotToUnderscore}}Stub
 	HasNext
 	values   []{{.IsNullable}}{{.TypeName}}
-	checkNot bool
+	operation ConditionConstant
+}
+
+func (this *{{index .FieldToColumn 0 | ToLower}}{{Title .StructName}}) Values() []{{.IsNullable}}{{.TypeName}} {
+	return this.values
 }
 
 func (this *{{index .FieldToColumn 0 | ToLower}}{{Title .StructName}}) render() string {
-	{{if .IsNullable}}
-	if this.values == nil || len(this.values) == 0 {
-		if this.checkNot {
-			return "{{index .FieldToColumn 1}} is not null"
-		} else {
-			return "{{index .FieldToColumn 1}} is null"
-		}
+	if conditionRenderer, found := ConditionRenderingMap[this.operation]; found {
+		return conditionRenderer(this)
 	}
-	{{end}}
-	if (len(this.values) == 1) {
-		if this.checkNot {
-			return "{{index .FieldToColumn 1}} <> " + {{.ValueToStringFunc.Start}}{{.IsNullable}}this.values[0]{{.ValueToStringFunc.End}}
-		} else {
-			return "{{index .FieldToColumn 1}} = " + {{.ValueToStringFunc.Start}}{{.IsNullable}}this.values[0]{{.ValueToStringFunc.End}}
-		}
-	}
-	vstr := make([]string, 0, len(this.values))
-	for _, vptr := range this.values {
-		{{if .IsNullable}}
-		if vptr != nil {
-			vstr = append(vstr, {{.ValueToStringFunc.Start}}{{.IsNullable}}vptr{{.ValueToStringFunc.End}})
-		}
-		{{else}}
-			vstr = append(vstr, {{.ValueToStringFunc.Start}}vptr{{.ValueToStringFunc.End}})
-		{{end}}
-	}
-	if this.checkNot {
-		return "{{index .FieldToColumn 1}} not in (" + strings.Join(vstr, ", ") + ")"
-	} else {
-		return "{{index .FieldToColumn 1}} in (" + strings.Join(vstr, ", ") + ")"
-	}
+	panic("Not supported operation for: {{.TypeName}}")
 }
 
 func (this *{{index .FieldToColumn 0 | ToLower}}{{Title .StructName}}) Render() string {
@@ -243,30 +208,48 @@ func (this *{{index .FieldToColumn 0 | ToLower}}{{Title .StructName}}) Render() 
 }
 
 func (this *{{index .FieldToColumn 0 | ToLower}}{{Title .StructName}}) And(cond LolCondition) LolCondition {
-	this.SetNext(&lolConditionAnd{condition:cond})
+	this.SetNext(&lolConditionAnd{LolCondition:cond})
 	return this
 }
 
 func (this *{{index .FieldToColumn 0 | ToLower}}{{Title .StructName}}) Or(cond LolCondition) LolCondition {
-	this.SetNext(&lolConditionOr{condition:cond})
+	this.SetNext(&lolConditionOr{LolCondition:cond})
 	return this
 }
 
 {{if .IsNullable}}
-func {{index .FieldToColumn 0 | Title}}Is(value ...{{.IsNullable}}{{.TypeName}}) LolCondition {
-	return &{{index .FieldToColumn 0 | ToLower}}{{Title .StructName}}{values:value}
+func {{index .FieldToColumn 0 | Title}}Is(values ...{{.IsNullable}}{{.TypeName}}) LolCondition {
+	return &{{index .FieldToColumn 0 | ToLower}}{{Title .StructName}}{values:values, operation:DefineAmount(values, nil) | Equals}
 }
 
 func {{index .FieldToColumn 0 | Title}}IsNot(values ...{{.IsNullable}}{{.TypeName}}) LolCondition {
-	return &{{index .FieldToColumn 0 | ToLower}}{{Title .StructName}}{values:values, checkNot: true}
+	return &{{index .FieldToColumn 0 | ToLower}}{{Title .StructName}}{values:values, operation:DefineAmount(values, nil) | Not | Equals}
 }
 {{else}}
-func {{index .FieldToColumn 0 | Title}}Is(v0 {{.TypeName}}, vnext ...{{.TypeName}}) LolCondition {
-	return &{{index .FieldToColumn 0 | ToLower}}{{Title .StructName}}{values:append([]{{.TypeName}}{v0}, vnext...)}
+func {{index .FieldToColumn 0 | Title}}Is(v0 {{.IsNullable}}{{.TypeName}}, vnext ...{{.IsNullable}}{{.TypeName}}) LolCondition {
+	return &{{index .FieldToColumn 0 | ToLower}}{{Title .StructName}}{values:utils.Prepend{{Title .TypeName}}(v0, vnext), operation:DefineAmount(v0, vnext) | Equals}
 }
 
-func {{index .FieldToColumn 0 | Title}}IsNot(v0 {{.TypeName}}, vnext ...{{.TypeName}}) LolCondition {
-	return &{{index .FieldToColumn 0 | ToLower}}{{Title .StructName}}{values:append([]{{.TypeName}}{v0}, vnext...), checkNot: true}
+func {{index .FieldToColumn 0 | Title}}IsNot(v0 {{.IsNullable}}{{.TypeName}}, vnext ...{{.IsNullable}}{{.TypeName}}) LolCondition {
+	return &{{index .FieldToColumn 0 | ToLower}}{{Title .StructName}}{values:utils.Prepend{{Title .TypeName}}(v0, vnext), operation:DefineAmount(v0, vnext) | Not | Equals}
 }
 {{end}}
+
+{{if .Likable}}{{if .IsNullable}}
+func {{index .FieldToColumn 0 | Title}}Like(values ...{{.IsNullable}}{{.TypeName}}) LolCondition {
+	return &{{index .FieldToColumn 0 | ToLower}}{{Title .StructName}}{values:values, operation:DefineAmount(values, nil) | Like}
+}
+
+func {{index .FieldToColumn 0 | Title}}NotLike(values ...{{.IsNullable}}{{.TypeName}}) LolCondition {
+	return &{{index .FieldToColumn 0 | ToLower}}{{Title .StructName}}{values:values, operation:DefineAmount(values, nil) | Not | Like}
+}
+{{else}}
+func {{index .FieldToColumn 0 | Title}}Like(v0 {{.TypeName}}, vnext ...{{.TypeName}}) LolCondition {
+	return &{{index .FieldToColumn 0 | ToLower}}{{Title .StructName}}{values:utils.PrependString(v0, vnext), operation:DefineAmount(v0, vnext) | Like}
+}
+
+func {{index .FieldToColumn 0 | Title}}NotLike(v0 {{.TypeName}}, vnext ...{{.TypeName}}) LolCondition {
+	return &{{index .FieldToColumn 0 | ToLower}}{{Title .StructName}}{values:utils.PrependString(v0, vnext), operation:DefineAmount(v0, vnext) | Not | Like}
+}
+{{end}}{{end}}
 `)

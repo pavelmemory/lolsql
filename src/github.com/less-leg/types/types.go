@@ -160,17 +160,15 @@ func DefineAmount(v1 interface{}, vnext interface{}) ConditionConstant {
 				return Multi
 			}
 		} else {
-			panic("Incorrect usage of the method. Expected: CountOperation(val, vals) | CountOperation(vals, nil)")
+			panic("Incorrect usage of the method. Expected: DefineAmount(val, vals) | DefineAmount(vals, nil)")
 		}
 	default:
-		switch utils.Length(vnext) + 1 {
-		case 1:
+		if utils.Length(vnext) + 1 == 1 {
 			return Single
-		default:
+		} else {
 			return Multi
 		}
 	}
-	panic("Unreachable code")
 }
 
 func renderEqualsNull(condition interface{}) string {
