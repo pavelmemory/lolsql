@@ -10,12 +10,10 @@ import (
 	"github.com/less-leg/generator"
 	"github.com/less-leg/utils"
 	"io"
-	"time"
-	"github.com/less-leg/dbmodel/lolsql/handsome"
 )
 
 func main() {
-	generate := false
+	generate := true
 
 	if generate {
 		packageDir := "github.com/less-leg/dbmodel"
@@ -27,7 +25,6 @@ func main() {
 		//generateLol(pckgDef)
 		generateLol2(pckgDef)
 	} else {
-		//TestAllThatShit()
 
 		//ids := []int{10, 102}
 		//fmt.Println(
@@ -36,16 +33,16 @@ func main() {
 		//	//Where(person.IdIs().And(person.IdIs(&ids[0], &ids[1]))).Render())
 		//	Where(person.IdIs(1).And(person.IdIs(ids[0], ids[1]))).Render())
 
-		now := time.Now()
-		fmt.Println(handsome.Select().Where(handsome.DateOfBirthIsNot(&now)).Or(handsome.SalaryIs(10.2, 100.2)).And(handsome.LoginIs("LoginIs")).Render())
-		fmt.Println(handsome.Select(handsome.DateOfBirth()).Where(handsome.DateOfBirthIsNot(&now)).Or(handsome.SalaryIs(10.2, 100.2)).And(handsome.LoginIsNot("LoginIsNot")).Render())
-		fmt.Println(handsome.Select().Where(handsome.DateOfBirthIsNot(&now)).Or(handsome.SalaryIs(10.2, 100.2)).And(handsome.LoginIs("LoginIs", "LoginIs2")).Render())
-		fmt.Println(handsome.Select().Where(handsome.DateOfBirthIsNot(&now)).Or(handsome.SalaryIs(10.2, 100.2)).And(handsome.LoginIsNot("LoginIsNot", "LoginIsNot2")).Render())
-		fmt.Println(handsome.Select().Where(handsome.DateOfBirthIsNot(&now)).Or(handsome.SalaryIs(10.2, 100.2)).And(handsome.LoginLike("%P1")).Render())
-		fmt.Println(handsome.Select().Where(handsome.DateOfBirthIsNot(&now)).Or(handsome.SalaryIs(10.2, 100.2)).And(handsome.LoginNotLike("%P1")).Render())
-		fmt.Println(handsome.Select().Where(handsome.DateOfBirthIsNot(&now)).Or(handsome.SalaryIs(10.2, 100.2)).And(handsome.LoginLike("LoginLike", "LoginLike2")).Render())
-		fmt.Println(handsome.Select().Where(handsome.DateOfBirthIsNot(&now)).Or(handsome.SalaryIs(10.2, 100.2)).And(handsome.LoginNotLike("LoginNotLike", "LoginNotLike2")).Render())
-		//
+		//now := time.Now()
+		//fmt.Println(handsome.Select(handsome.Login(), handsome.DateOfBirth()).Where(handsome.DateOfBirthIsNot(&now)).Or(handsome.SalaryIs(10.2, 100.2)).And(handsome.LoginIsNot("LoginIsNot")).Render())
+		//fmt.Println(handsome.Select().Where(handsome.DateOfBirthIsNot(&now).Or(handsome.SalaryIs(10.2, 100.2).Or(handsome.SalaryIs(-100)))).And(handsome.LoginIs("LoginIs")).Render())
+		//fmt.Println(handsome.Select().Where(handsome.DateOfBirthIsNot(&now)).Or(handsome.SalaryIs(10.2, 100.2)).And(handsome.LoginIs("LoginIs", "LoginIs2")).Render())
+		//fmt.Println(handsome.Select().Where(handsome.DateOfBirthIsNot(&now)).Or(handsome.SalaryIs(10.2, 100.2)).And(handsome.LoginIsNot("LoginIsNot", "LoginIsNot2")).Render())
+		//fmt.Println(handsome.Select().Where(handsome.DateOfBirthIsNot(&now)).Or(handsome.SalaryIs(10.2, 100.2)).And(handsome.LoginLike("%P1")).Render())
+		//fmt.Println(handsome.Select().Where(handsome.DateOfBirthIsNot(&now)).Or(handsome.SalaryIs(10.2, 100.2)).And(handsome.LoginNotLike("%P1")).Render())
+		//fmt.Println(handsome.Select().Where(handsome.DateOfBirthIsNot(&now)).Or(handsome.SalaryIs(10.2, 100.2)).And(handsome.LoginLike("LoginLike", "LoginLike2")).Render())
+		//fmt.Println(handsome.Select().Where(handsome.DateOfBirthIsNot(&now)).Or(handsome.SalaryIs(10.2, 100.2)).And(handsome.LoginNotLike("LoginNotLike", "LoginNotLike2")).Render())
+
 		//fmt.Println(handsome.Select().Where(handsome.LoginIs("LoginIs")).Render())
 		//fmt.Println(handsome.Select().Where(handsome.LoginIsNot("LoginIsNot")).Render())
 		//fmt.Println(handsome.Select().Where(handsome.LoginIs("LoginIs", "LoginIs2")).Render())
@@ -192,26 +189,6 @@ func createDirectory(fileDir string) string {
 	}
 	return fileDir
 }
-
-//func TestAllThatShit() {
-//	id := 100
-//	id2 := 102
-//	id3 := 103
-//	var id4 *int
-//	name := "Pavel"
-//	name2 := "Pavel2"
-//	sql := Select().Where(IdIs(&id).And(NameIs(&name))).Or(IdIs(&id2, &id3, id4)).Render()
-//	fmt.Println(sql)
-//
-//	fmt.Println(Select(Id(), Name()).Where(NameIs(&name)).Render())
-//	fmt.Println(Select(Id(), Name()).Render())
-//	fmt.Println(
-//		Select(Id(), Name()).
-//		Where(NameIsNot(&name).And(IdIs(&id))).
-//			Or(IdIs(&id2, &id2).And(NameIsNot(&name, &name2)).Or(NameIs(&name2))).
-//			Render())
-//}
-
 
 func createEntityFile(pkgFilePath, entityName string) (entityFile *os.File) {
 	entityFileName := entityName + "_lol.go"

@@ -178,7 +178,6 @@ func (*{{index . 0 | ToLower | DotToUnderscore}}Stub) Column() string {return "{
 {{end}}
 `)
 
-
 var ConditionByField2, _ = template.New("").Funcs(template.FuncMap{
 	"Title": strings.Title,
 	"ToLower": strings.ToLower,
@@ -195,8 +194,8 @@ func (this *{{index .FieldToColumn 0 | ToLower}}{{Title .StructName}}) Values() 
 }
 
 func (this *{{index .FieldToColumn 0 | ToLower}}{{Title .StructName}}) render() string {
-	if conditionRendering, found := ConditionRenderingMap[this.operation]["{{.IsNullable}}{{.TypeName}}"]; found {
-		return conditionRendering(this)
+	if conditionRenderer, found := ConditionRenderingMap[this.operation]; found {
+		return conditionRenderer(this)
 	}
 	panic("Not supported operation for: {{.TypeName}}")
 }
@@ -220,37 +219,37 @@ func (this *{{index .FieldToColumn 0 | ToLower}}{{Title .StructName}}) Or(cond L
 
 {{if .IsNullable}}
 func {{index .FieldToColumn 0 | Title}}Is(values ...{{.IsNullable}}{{.TypeName}}) LolCondition {
-	return &{{index .FieldToColumn 0 | ToLower}}{{Title .StructName}}{values:values, operation:DefineAmount{{Title .TypeName | DotToUnderscore}}Ptrs(values) | Equals}
+	return &{{index .FieldToColumn 0 | ToLower}}{{Title .StructName}}{values:values, operation:DefineAmount(values, nil) | Equals}
 }
 
 func {{index .FieldToColumn 0 | Title}}IsNot(values ...{{.IsNullable}}{{.TypeName}}) LolCondition {
-	return &{{index .FieldToColumn 0 | ToLower}}{{Title .StructName}}{values:values, operation:DefineAmount{{Title .TypeName | DotToUnderscore}}Ptrs(values) | Not | Equals}
+	return &{{index .FieldToColumn 0 | ToLower}}{{Title .StructName}}{values:values, operation:DefineAmount(values, nil) | Not | Equals}
 }
 {{else}}
 func {{index .FieldToColumn 0 | Title}}Is(v0 {{.IsNullable}}{{.TypeName}}, vnext ...{{.IsNullable}}{{.TypeName}}) LolCondition {
-	return &{{index .FieldToColumn 0 | ToLower}}{{Title .StructName}}{values:utils.Prepend{{Title .TypeName}}(v0, vnext), operation:DefineAmount{{Title .TypeName | DotToUnderscore}}s(vnext) | Not | Equals}
+	return &{{index .FieldToColumn 0 | ToLower}}{{Title .StructName}}{values:utils.Prepend{{Title .TypeName}}(v0, vnext), operation:DefineAmount(v0, vnext) | Equals}
 }
 
 func {{index .FieldToColumn 0 | Title}}IsNot(v0 {{.IsNullable}}{{.TypeName}}, vnext ...{{.IsNullable}}{{.TypeName}}) LolCondition {
-	return &{{index .FieldToColumn 0 | ToLower}}{{Title .StructName}}{values:utils.Prepend{{Title .TypeName}}(v0, vnext), operation:DefineAmount{{Title .TypeName | DotToUnderscore}}s(vnext) | Not | Equals}
+	return &{{index .FieldToColumn 0 | ToLower}}{{Title .StructName}}{values:utils.Prepend{{Title .TypeName}}(v0, vnext), operation:DefineAmount(v0, vnext) | Not | Equals}
 }
 {{end}}
 
 {{if .Likable}}{{if .IsNullable}}
 func {{index .FieldToColumn 0 | Title}}Like(values ...{{.IsNullable}}{{.TypeName}}) LolCondition {
-	return &{{index .FieldToColumn 0 | ToLower}}{{Title .StructName}}{values:values, operation: DefineAmount{{Title .TypeName | DotToUnderscore}}Ptrs(values) | Like}
+	return &{{index .FieldToColumn 0 | ToLower}}{{Title .StructName}}{values:values, operation:DefineAmount(values, nil) | Like}
 }
 
 func {{index .FieldToColumn 0 | Title}}NotLike(values ...{{.IsNullable}}{{.TypeName}}) LolCondition {
-	return &{{index .FieldToColumn 0 | ToLower}}{{Title .StructName}}{values:values, operation: DefineAmount{{Title .TypeName | DotToUnderscore}}Ptrs(values) | Not | Like}
+	return &{{index .FieldToColumn 0 | ToLower}}{{Title .StructName}}{values:values, operation:DefineAmount(values, nil) | Not | Like}
 }
 {{else}}
 func {{index .FieldToColumn 0 | Title}}Like(v0 {{.TypeName}}, vnext ...{{.TypeName}}) LolCondition {
-	return &{{index .FieldToColumn 0 | ToLower}}{{Title .StructName}}{values:utils.PrependString(v0, vnext), operation:DefineAmount{{Title .TypeName | DotToUnderscore}}s(vnext) | Like}
+	return &{{index .FieldToColumn 0 | ToLower}}{{Title .StructName}}{values:utils.PrependString(v0, vnext), operation:DefineAmount(v0, vnext) | Like}
 }
 
 func {{index .FieldToColumn 0 | Title}}NotLike(v0 {{.TypeName}}, vnext ...{{.TypeName}}) LolCondition {
-	return &{{index .FieldToColumn 0 | ToLower}}{{Title .StructName}}{values:utils.PrependString(v0, vnext), operation:DefineAmount{{Title .TypeName | DotToUnderscore}}s(vnext) | Not | Like}
+	return &{{index .FieldToColumn 0 | ToLower}}{{Title .StructName}}{values:utils.PrependString(v0, vnext), operation:DefineAmount(v0, vnext) | Not | Like}
 }
 {{end}}{{end}}
 `)

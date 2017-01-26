@@ -5,6 +5,7 @@ import (
 	"strings"
 	"strconv"
 	"time"
+	"reflect"
 )
 
 var InvalidImportProtection = 0
@@ -12,6 +13,20 @@ var InvalidImportProtection = 0
 func PanicIf(err error) {
 	if err != nil {
 		log.Panicln(err.Error())
+	}
+}
+
+func Length(elememts interface{}) int {
+	value := reflect.ValueOf(elememts)
+	if value.IsNil() {
+		return 0
+	} else {
+		switch value.Kind() {
+		case reflect.Array, reflect.Chan, reflect.Map, reflect.Slice, reflect.String:
+			return value.Len()
+		default:
+			return 0
+		}
 	}
 }
 
@@ -67,6 +82,58 @@ func EncloseWithPtrs(suffix, prefix string, strs ... *string) []string {
 		}
 	}
 	return modif
+}
+
+func ToStrings(vals interface{}) [] string {
+	if value := reflect.ValueOf(vals); value.IsValid() {
+		res := []string{}
+		switch value.Kind() {
+		case reflect.Array, reflect.Slice:
+			for i := 0; i < value.Len(); i++ {
+				res = append(res, ToString(value.Index(i).Interface()))
+			}
+		}
+		return res
+	}
+	panic("Cannot be used as parameter")
+}
+
+var timeReflectType = reflect.TypeOf(time.Time{})
+
+func ToString(vals interface{}) string {
+	if value := reflect.ValueOf(vals); value.IsValid() {
+		switch {
+		case value.Kind() == reflect.Ptr:
+			return valueToString(value.Elem())
+		case reflect.TypeOf(vals) == timeReflectType:
+			return vals.(time.Time).Format("2006-01-02 15:04:05")
+		default:
+			return valueToString(value)
+		}
+	}
+	panic("Cannot be used as parameter")
+}
+
+func valueToString(value reflect.Value) string {
+	if value.Type() == timeReflectType {
+		return value.Interface().(time.Time).Format("2006-01-02 15:04:05")
+	}
+
+	switch value.Kind() {
+	case reflect.Int, reflect.Int8, reflect.Int16, reflect.Int32, reflect.Int64:
+		return strconv.FormatInt(value.Int(), 10)
+	case reflect.Bool:
+		return strconv.FormatBool(value.Bool())
+	case reflect.Float32:
+		return strconv.FormatFloat(value.Float(), 'f', -1, 32)
+	case reflect.Float64:
+		return strconv.FormatFloat(value.Float(), 'f', -1, 64)
+	case reflect.Uint, reflect.Uint8, reflect.Uint16, reflect.Uint32, reflect.Uint64:
+		return strconv.FormatUint(value.Uint(), 10)
+	case reflect.String:
+		return value.String()
+	}
+	panic("Not supported type for string creation: " + value.Kind().String())
 }
 
 func IntToString(ints ... int)[] string {
