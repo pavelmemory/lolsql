@@ -5,12 +5,18 @@ import (
 
 	"github.com/less-leg/utils"
 	"github.com/less-leg/parser"
-	"github.com/less-leg/generator"
 	"fmt"
+	"github.com/less-leg/sql/generator"
 	"github.com/less-leg/dbmodel/lolsql/djangoadminlog"
+	"os"
 )
 
 func main() {
+	generator.Sdwef()
+	os.Exit(0)
+
+
+	fmt.Println()
 	generate := false
 
 	if generate {
@@ -39,6 +45,7 @@ func main() {
 		//fmt.Println(handsome.Select().Where(handsome.DateOfBirthIsNot(&now)).Or(handsome.SalaryIs(10.2, 100.2)).And(handsome.LoginNotLike("%P1")).Render())
 		//fmt.Println(handsome.Select().Where(handsome.DateOfBirthIsNot(&now)).Or(handsome.SalaryIs(10.2, 100.2)).And(handsome.LoginLike("LoginLike", "LoginLike2")).Render())
 		//fmt.Println(handsome.Select().Where(handsome.DateOfBirthIsNot(&now)).Or(handsome.SalaryIs(10.2, 100.2)).And(handsome.LoginNotLike("LoginNotLike", "LoginNotLike2")).Render())
-		fmt.Println(djangoadminlog.Select().Where(djangoadminlog.ActionFlagIs(10).Render()))
+
+		fmt.Println(djangoadminlog.Select().Where(djangoadminlog.ActionFlagIs(10)).Render())
 	}
 }

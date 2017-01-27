@@ -1,6 +1,10 @@
 package dbmodel
 
-import "time"
+import (
+	"time"
+	"encoding/json"
+	"bytes"
+)
 
 type Handsome struct {
 	Login       string `lolsql:"id[true] column[USER_LOGIN]"`
@@ -23,6 +27,15 @@ type DjangoAdminLog struct {
 	ContentTypeId *int      `lolsql:"column[content_type_id]"`
 	UserId        int       `lolsql:"column[user_id]"`
 
+}
+
+var buffer = &bytes.Buffer{}
+var encoder = func() *json.Encoder { e := json.NewEncoder(buffer);e.SetIndent("  ", ""); return e }()
+
+func (this *DjangoAdminLog) String() string {
+	buffer.Reset()
+	encoder.Encode(this)
+	return buffer.String()
 }
 
 func (*DjangoAdminLog)TableName() string {
