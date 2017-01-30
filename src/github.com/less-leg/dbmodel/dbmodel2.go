@@ -18,7 +18,7 @@ func (*Handsome)TableName() string {
 }
 
 type DjangoAdminLog struct {
-	Id int                  `lolsql:"id[true]"`
+	Id            int       `lolsql:"id[true]"`
 	ActionTime    time.Time `lolsql:"column[action_time]"`
 	ObjectId      *string   `lolsql:"column[object_id]"`
 	ObjectRepr    string    `lolsql:"column[object_repr]"`
@@ -26,7 +26,6 @@ type DjangoAdminLog struct {
 	ChangeMessage string    `lolsql:"column[change_message]"`
 	ContentTypeId *int      `lolsql:"column[content_type_id]"`
 	UserId        int       `lolsql:"column[user_id]"`
-
 }
 
 var buffer = &bytes.Buffer{}

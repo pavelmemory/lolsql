@@ -7,7 +7,6 @@ import (
 	"github.com/less-leg/parser"
 	"fmt"
 	"github.com/less-leg/sql/generator"
-	"github.com/less-leg/dbmodel/lolsql/djangoadminlog"
 	"os"
 )
 
@@ -35,7 +34,7 @@ func main() {
 		//		person.Id(), person.Name_FirstName(), person.Name_MiddleName()).
 		//	//Where(person.IdIs().And(person.IdIs(&ids[0], &ids[1]))).Render())
 		//	Where(person.IdIs(1).And(person.IdIs(ids[0], ids[1]))).Render())
-
+		//
 		//now := time.Now()
 		//fmt.Println(handsome.Select(handsome.Login(), handsome.DateOfBirth()).Where(handsome.DateOfBirthIsNot(&now)).Or(handsome.SalaryIs(10.2, 100.2)).And(handsome.LoginIsNot("LoginIsNot")).Render())
 		//fmt.Println(handsome.Select().Where(handsome.DateOfBirthIsNot(&now).Or(handsome.SalaryIs(10.2, 100.2).Or(handsome.SalaryIs(-100)))).And(handsome.LoginIs("LoginIs")).Render())
@@ -46,6 +45,6 @@ func main() {
 		//fmt.Println(handsome.Select().Where(handsome.DateOfBirthIsNot(&now)).Or(handsome.SalaryIs(10.2, 100.2)).And(handsome.LoginLike("LoginLike", "LoginLike2")).Render())
 		//fmt.Println(handsome.Select().Where(handsome.DateOfBirthIsNot(&now)).Or(handsome.SalaryIs(10.2, 100.2)).And(handsome.LoginNotLike("LoginNotLike", "LoginNotLike2")).Render())
 
-		fmt.Println(djangoadminlog.Select().Where(djangoadminlog.ActionFlagIs(10)).Render())
+		//fmt.Println(djangoadminlog.Select().Where(djangoadminlog.ActionFlagIs(10)).Render())
 	}
 }

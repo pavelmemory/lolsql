@@ -6,8 +6,8 @@ import (
 	"github.com/less-leg/utils"
 	"github.com/less-leg/dbmodel"
 	"fmt"
-	"github.com/less-leg/types"
 	"reflect"
+	"github.com/less-leg/types"
 )
 
 func Sdwef() {
@@ -22,10 +22,9 @@ func Sdwef() {
 }
 
 type djangoAdminLogScanner struct {
-	db        *sql.DB
-	sql       string
-	selectors []interface{}
-	mappers []func(to interface{}, from interface{})
+	db       *sql.DB
+	sql      string
+	selector Selector
 }
 
 func Set(to interface{}, value interface{}) {
@@ -47,46 +46,95 @@ func Set(to interface{}, value interface{}) {
 	valueOfTo.Set(valueOfValue)
 }
 
-func SetWithRetrieval(mapper func(interface{}, interface{}), retrieval func()) func(interface{}, interface{}) {
-	return func(to interface{}, from interface{}) {
-		mapper(to, retrieval())
+//func SetWithRetrieval(mapper func(interface{}, interface{}), retrieval func()) func(interface{}, interface{}) {
+//	return func(to interface{}, from interface{}) {
+//		mapper(to, retrieval())
+//	}
+//}
+
+func (this *djangoAdminLogScanner) Select(field string) {
+	this.selector.InitSelection(field)
+}
+
+type holder struct {
+	tmp       interface{}
+	propagate func(*dbmodel.DjangoAdminLog, interface{})
+}
+
+type Selector struct {
+	holders    map[string]*holder
+	fieldNames []string
+}
+
+func (this *Selector) InitSelection(fieldName string) {
+	if this.holders == nil {
+		this.holders = make(map[string]*holder)
 	}
+	if _, found := this.holders[fieldName]; found {
+		panic("Incorrectly builded query string: Duplicate select field: " + fieldName)
+	}
+
+	var h *holder
+	switch fieldName {
+	case "Id":
+		h = &holder{
+			tmp:new(int),
+			propagate:func(entity *dbmodel.DjangoAdminLog, tmp interface{}) {
+				entity.Id = *(tmp.(*int))
+			},
+		}
+
+	case "ActionTime":
+		h = &holder{
+			tmp:new(types.NullTime),
+			propagate:func(entity *dbmodel.DjangoAdminLog, tmp interface{}) {
+				t := tmp.(*types.NullTime)
+				if t.Valid {
+					entity.ActionTime = t.Time
+				}
+			},
+		}
+
+	case "ObjectId":
+		h = &holder{tmp:new(sql.NullString), propagate:func(entity *dbmodel.DjangoAdminLog, tmp interface{}) {
+			s := *(tmp.(*sql.NullString))
+			if s.Valid {
+				entity.ObjectId = &s.String
+			}
+		}}
+	default:
+		panic(fieldName)
+	}
+
+	this.holders[fieldName] = h
+	this.fieldNames = append(this.fieldNames, fieldName)
 }
 
-func (this *djangoAdminLogScanner) Select(field interface{}, mapper func(interface{}, interface{})) {
-	this.selectors = append(this.selectors, field)
-	this.mappers = append(this.mappers, mapper)
+func (this *Selector) Tmps() []interface{} {
+	tmps := make([]interface{}, 0, len(this.fieldNames))
+	for _, fieldName := range this.fieldNames {
+		if holder, found := this.holders[fieldName]; found {
+			tmps = append(tmps, holder.tmp)
+		} else {
+			panic("Selection builder has error: Holder for field was not found: " + fieldName)
+		}
+	}
+	return tmps
 }
 
-func (this *djangoAdminLogScanner) Fucj(db *sql.DB) ([]*dbmodel.DjangoAdminLog, error) {
-	dal := dbmodel.DjangoAdminLog{ObjectId:new(string), ContentTypeId:new(int)}
-	objectId := sql.NullString{}
-	actionTime := types.NullTime{}
-	contentTypeId := sql.NullInt64{}
-
-	this.Select(&dal.Id, Set)
-	this.Select(&actionTime, SetWithRetrieval(Set, func() {
-		if actionTime.Valid {
-			dal.ActionTime = actionTime.Time
+func (this *Selector) Fetch() *dbmodel.DjangoAdminLog {
+	entity := new(dbmodel.DjangoAdminLog)
+	for _, fieldName := range this.fieldNames {
+		if holder, found := this.holders[fieldName]; found {
+			holder.propagate(entity, holder.tmp)
+		} else {
+			panic("Selection builder has error: Holder for field was not found: " + fieldName)
 		}
-	}))
-	this.Select(&objectId, SetWithRetrieval(Set, func(){
-		if objectId.Valid {
-			dal.ObjectId = &objectId.String
-		}
-	}))
-	this.Select(&dal.ObjectRepr, Set)
-	this.Select(&dal.ActionFlag, Set)
-	this.Select(&dal.ChangeMessage, Set)
-	this.Select(&contentTypeId, SetWithRetrieval(Set, func(){
-		if contentTypeId.Valid {
-			contentTypeIdInt := int(contentTypeId.Int64)
-			dal.ContentTypeId = &contentTypeIdInt
-		}
-	}))
-	this.Select(&dal.UserId, Set)
+	}
+	return entity
+}
 
-
+func (this *djangoAdminLogScanner) Fucj() ([]*dbmodel.DjangoAdminLog, error) {
 	rows, err := this.db.Query(this.sql)
 	if err != nil {
 		return nil, err
@@ -94,8 +142,13 @@ func (this *djangoAdminLogScanner) Fucj(db *sql.DB) ([]*dbmodel.DjangoAdminLog, 
 
 	fetched := []*dbmodel.DjangoAdminLog{}
 	for rows.Next() {
-		rows.Scan(this.selectors...)
-
+		if err = rows.Scan(this.selector.Tmps()...); err != nil {
+			if errClose := rows.Close(); errClose != nil {
+				return nil, fmt.Errorf("Cause: %s\nClose: %s", err.Error(), errClose.Error())
+			}
+			return nil, err
+		}
+		fetched = append(fetched, this.selector.Fetch())
 	}
 
 	if err = rows.Err(); err != nil {
@@ -118,75 +171,13 @@ func newDjangoAdminLog(fields []interface{}) *dbmodel.DjangoAdminLog {
 	return dal
 }
 
-// "select Id, action_time, object_id, object_repr, action_flag, change_message, content_type_id, user_id from django_admin_log where id = 2 and action_flag = 1"
-// []interface{}{&dal.Id, &actionTime, &objectId, &dal.ObjectRepr, &dal.ActionFlag, &dal.ChangeMessage, &contentTypeId, &dal.UserId}
-func (this *djangoAdminLogScanner) Scan() (fetched []*dbmodel.DjangoAdminLog, err error) {
-	rows, err := this.db.Query(this.sql)
-	if err != nil {
-		return nil, err
-	}
-
-	for rows.Next() {
-		rows.Scan(this.selectors...)
-		fetched = append(fetched, newDjangoAdminLog(this.selectors))
-
-
-	}
-
-	if err = rows.Err(); err != nil {
-		return nil, err
-	}
-
-	if err = rows.Close(); err != nil {
-		return nil, err
-	}
-
-	return fetched, nil
-}
-
 func SelectDjangoAdminLog(db *sql.DB) ([]*dbmodel.DjangoAdminLog, error) {
-	rows, err := db.Query("select Id, action_time, object_id, object_repr, action_flag, change_message, content_type_id, user_id from django_admin_log where id = 2 and action_flag = 1")
-	if err != nil {
-		return nil, err
-	}
-	// TODO: get list of columns to propagate them into an entity object
-	//rows.Columns()
+	dalScaner := djangoAdminLogScanner{}
+	dalScaner.db = db
+	dalScaner.sql = "select Id, action_time, object_id from django_admin_log where id = 2 and action_flag = 1"
+	dalScaner.Select("Id")
+	dalScaner.Select("ActionTime")
+	dalScaner.Select("ObjectId")
+	return dalScaner.Fucj()
 
-	results := []*dbmodel.DjangoAdminLog{}
-	for rows.Next() {
-		dal := &dbmodel.DjangoAdminLog{}
-		objectId := sql.NullString{}
-		actionTime := types.NullTime{}
-		contentTypeId := sql.NullInt64{}
-
-		fields := []interface{}{&dal.Id, &actionTime, &objectId, &dal.ObjectRepr, &dal.ActionFlag, &dal.ChangeMessage, &contentTypeId, &dal.UserId}
-
-		rows.Scan(fields...)
-
-		if actionTime.Valid {
-			fmt.Println("YES")
-			dal.ActionTime = actionTime.Time
-		} else {
-			fmt.Println("NO")
-		}
-		if objectId.Valid {
-			dal.ObjectId = &objectId.String
-		}
-		if contentTypeId.Valid {
-			contentTypeIdInt := int(contentTypeId.Int64)
-			dal.ContentTypeId = &contentTypeIdInt
-		}
-
-		results = append(results, dal)
-	}
-	err = rows.Err()
-	if err != nil {
-		return nil, err
-	}
-
-	err = rows.Close()
-	if err != nil {
-		return nil, err
-	}
-	return results, nil
 }
