@@ -20,19 +20,51 @@ func Generate(pckgDef *parser.PackageDefinition) {
 			entityFile := createEntityFile(entPackageDirPath, structNameLowCase)
 
 			Package.ExecuteTemplate(entityFile, "", structNameLowCase)
+
 			Imports.ExecuteTemplate(entityFile, "", append([]string{
 				`. "github.com/less-leg/types"`,
 				`"strings"`,
+				`"database/sql"`,
+				`"fmt"`,
 				`"github.com/less-leg/utils"`},
-				utils.DoubleQuote(sdef.Selectors()...)...))
+				utils.DoubleQuotes(append([]string{pckgDef.ModelPackage}, sdef.Selectors()...)...)...))
+
 			Column_interface.ExecuteTemplate(entityFile, "", nil)
-			Lol_struct.ExecuteTemplate(entityFile, "", []string{
-				sdef.TableName,
-				strings.Join(pckgDef.ColumnNames(structName), ", ")})
+
+			Scanner_struct.ExecuteTemplate(entityFile, "", struct {
+				Package string
+				StructName string
+				Fields []*parser.FetchMeta
+			}{
+				Package:pckgDef.ModelPackageName(),
+				StructName:sdef.Name(),
+				Fields: sdef.FetchMeta(),
+			})
+
+			Lol_struct.ExecuteTemplate(entityFile, "", struct{
+				Package string
+				StructName string
+				TableNameToColumns[]string
+			}{
+				Package:pckgDef.ModelPackageName(),
+				StructName:sdef.Name(),
+				TableNameToColumns: []string{sdef.TableName, strings.Join(pckgDef.ColumnNames(structName), ", ")},
+			})
+
 			Select_func.ExecuteTemplate(entityFile, "", nil)
-			LolWhere_struct.ExecuteTemplate(entityFile, "", nil)
+
+			LolWhere_struct.ExecuteTemplate(entityFile, "", struct {
+				Package string
+				StructName string
+			}{
+				Package:pckgDef.ModelPackageName(),
+				StructName:sdef.Name(),
+			})
+
 			LolConditionAnd_struct.ExecuteTemplate(entityFile, "", nil)
+
 			LolConditionOr_struct.ExecuteTemplate(entityFile, "", nil)
+
 			ColumnStub_struct.ExecuteTemplate(entityFile, "", pckgDef.FieldsToColumns(structName))
 
 			generateFields(entityFile, pckgDef, sdef, "")

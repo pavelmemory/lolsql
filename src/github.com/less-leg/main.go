@@ -1,21 +1,19 @@
 package main
 
 import (
+	_ "github.com/go-sql-driver/mysql"
+
 	"path/filepath"
 
 	"github.com/less-leg/utils"
 	"github.com/less-leg/parser"
-	"fmt"
 	"github.com/less-leg/sql/generator"
-	"os"
+	"fmt"
+	"database/sql"
+	"github.com/less-leg/dbmodel/lolsql/djangoadminlog"
 )
 
 func main() {
-	generator.Sdwef()
-	os.Exit(0)
-
-
-	fmt.Println()
 	generate := false
 
 	if generate {
@@ -23,7 +21,7 @@ func main() {
 		sourceDir := "D:/projects/less-leg/src"
 		parsedStructs := parser.Parse(packageDir, sourceDir)
 		lolDirPath := utils.RecreateDirectory(filepath.Join(sourceDir, packageDir, "lolsql"))
-		pckgDef := parser.NewPackageDefinition(lolDirPath, parsedStructs)
+		pckgDef := parser.NewPackageDefinition(packageDir, lolDirPath, parsedStructs)
 
 		generator.Generate(pckgDef)
 	} else {
@@ -45,6 +43,13 @@ func main() {
 		//fmt.Println(handsome.Select().Where(handsome.DateOfBirthIsNot(&now)).Or(handsome.SalaryIs(10.2, 100.2)).And(handsome.LoginLike("LoginLike", "LoginLike2")).Render())
 		//fmt.Println(handsome.Select().Where(handsome.DateOfBirthIsNot(&now)).Or(handsome.SalaryIs(10.2, 100.2)).And(handsome.LoginNotLike("LoginNotLike", "LoginNotLike2")).Render())
 
-		//fmt.Println(djangoadminlog.Select().Where(djangoadminlog.ActionFlagIs(10)).Render())
+		db, err := sql.Open("mysql", "root:root@/akeos?parseTime=true")
+		utils.PanicIf(err)
+		defer db.Close()
+		fmt.Println(djangoadminlog.Select().Where(djangoadminlog.ActionFlagIs(2)).Fetch(db))
+
+		/*
+
+		*/
 	}
 }

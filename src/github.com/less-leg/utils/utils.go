@@ -60,7 +60,7 @@ func Quote(strs string) string {
 	return "'" + strs + "'"
 }
 
-func DoubleQuote(strs ...string) []string {
+func DoubleQuotes(strs ...string) []string {
 	return EncloseWith("\"", "\"", strs...)
 }
 
@@ -348,3 +348,22 @@ func PrependTime_Time(v0 time.Time, vnext []time.Time) []time.Time {
 	return append(buf, vnext...)
 }
 
+
+func Set(to interface{}, value interface{}) {
+	valueOfTo := reflect.ValueOf(to)
+	for valueOfTo.Kind() == reflect.Ptr {
+		if valueOfTo.IsNil() {
+			return
+		}
+		valueOfTo = valueOfTo.Elem()
+	}
+	valueOfValue := reflect.ValueOf(value)
+	for valueOfValue.Kind() == reflect.Ptr {
+		if valueOfValue.IsNil() {
+			valueOfTo.Set(reflect.Zero(valueOfTo.Type()))
+			return
+		}
+		valueOfValue = valueOfValue.Elem()
+	}
+	valueOfTo.Set(valueOfValue)
+}

@@ -23,6 +23,112 @@ var invalidImportProtector = utils.InvalidImportProtection
 var Column_interface, _ = template.New("").Parse(`
 type column interface {
 	Column() string
+	FieldName() string
+}
+`)
+
+var Scanner_struct, _ = template.New("").Parse(`
+type holder struct {
+	temporary       interface{}
+	propagationFunc func(*{{.Package}}.{{.StructName}}, interface{})
+}
+
+func (this *holder) propagate(entity *{{.Package}}.{{.StructName}}) {
+	this.propagationFunc(entity, this.temporary)
+}
+
+type scanner struct {
+	sql        string
+	holders    map[string]*holder
+	fieldNames []string
+}
+
+func (this *scanner) InitPropagation(selects []column) {
+	this.holders = make(map[string]*holder)
+
+	for _, selectable := range selects {
+		if _, found := this.holders[selectable.Column()]; found {
+			panic("Incorrectly builded query string: Duplicate select field: " + selectable.FieldName())
+		}
+
+		var h *holder
+		switch selectable.FieldName() {
+		{{$package := .Package}}{{$structName := .StructName}}{{range .Fields}}
+		case "{{.FieldName}}":
+			h = &holder{
+				{{if .NullableValueType}}temporary:new({{.NullableValueType}}),
+				propagationFunc:func(entity *{{$package}}.{{$structName}}, tmp interface{}) {
+					f := tmp.(*{{.NullableValueType}})
+					if f.Valid {
+						v := {{.FieldType}}(f.{{.NullableValueHolder}})
+						entity.{{.FieldName}} = &v
+					}
+				},{{else}}
+				temporary:new({{.FieldType}}),
+				propagationFunc:func(entity *{{$package}}.{{$structName}}, tmp interface{}) {
+					entity.{{.FieldName}} = *(tmp.(*{{.FieldType}}))
+				},{{end}}
+			}
+		{{end}}
+		default:
+			panic(selectable.FieldName())
+		}
+
+		this.holders[selectable.FieldName()] = h
+		this.fieldNames = append(this.fieldNames, selectable.FieldName())
+	}
+}
+
+func (this *scanner) temporaries() []interface{} {
+	temporaries := make([]interface{}, 0, len(this.fieldNames))
+	for _, fieldName := range this.fieldNames {
+		if holder, found := this.holders[fieldName]; found {
+			temporaries = append(temporaries, holder.temporary)
+		} else {
+			panic("Selection builder has error: Holder for field was not found: " + fieldName)
+		}
+	}
+	return temporaries
+}
+
+func (this *scanner) Fetch() *{{.Package}}.{{.StructName}} {
+	entity := new({{.Package}}.{{.StructName}})
+	for _, fieldName := range this.fieldNames {
+		if holder, found := this.holders[fieldName]; found {
+			holder.propagate(entity)
+		} else {
+			panic("Selection builder has error: Holder for field was not found: " + fieldName)
+		}
+	}
+	return entity
+}
+
+func (this *scanner) Scan(db *sql.DB) ([]*{{.Package}}.{{.StructName}}, error) {
+	rows, err := db.Query(this.sql)
+	if err != nil {
+		return nil, err
+	}
+
+	fetched := []*{{.Package}}.{{.StructName}}{}
+	for rows.Next() {
+		if err = rows.Scan(this.temporaries()...); err != nil {
+			if errClose := rows.Close(); errClose != nil {
+				return nil, fmt.Errorf("Cause: %s\nClose: %s", err.Error(), errClose.Error())
+			}
+			return nil, err
+		}
+		fetched = append(fetched, this.Fetch())
+	}
+
+	if err = rows.Err(); err != nil {
+		return nil, err
+	}
+
+	if err = rows.Close(); err != nil {
+		return nil, err
+	}
+
+	return fetched, nil
 }
 `)
 
@@ -30,17 +136,24 @@ var Lol_struct, _ = template.New("").Parse(`
 type lol struct {
 	selectColumns []column
 	whereInited   bool
+	scanner       scanner
+}
+
+func (this *lol) Fetch(db *sql.DB) ([]*{{.Package}}.{{.StructName}}, error) {
+	this.scanner.InitPropagation(this.selectColumns)
+	this.scanner.sql = this.Render()
+	return this.scanner.Scan(db)
 }
 
 func (this *lol) Render() string {
 	if (len(this.selectColumns) == 0) {
-		return "select {{index . 1}} from {{index . 0}}"
+		return "select {{index .TableNameToColumns 1}} from {{index .TableNameToColumns 0}}"
 	}
 	cols := make([]string, 0, len(this.selectColumns))
 	for _, selectColumn := range this.selectColumns {
 		cols = append(cols, selectColumn.Column())
 	}
-	return "select " + strings.Join(cols, ", ") + " from {{index . 0}}"
+	return "select " + strings.Join(cols, ", ") + " from {{index .TableNameToColumns 0}}"
 }
 
 func (this *lol) Where(cond LolCondition) *lolWhere {
@@ -54,6 +167,9 @@ func (this *lol) Where(cond LolCondition) *lolWhere {
 
 var Select_func, _ = template.New("").Parse(`
 func Select(selects ...column) *lol {
+	if len(selects) < 1 {
+		return &lol{selectColumns:SelectAllColumns}
+	}
 	return &lol{selectColumns:selects}
 }
 `)
@@ -63,6 +179,12 @@ type lolWhere struct {
 	retrieval *lol
 	condition LolCondition
 	next      []LolCondition
+}
+
+func (this *lolWhere) Fetch(db *sql.DB) ([]*{{.Package}}.{{.StructName}}, error) {
+	this.retrieval.scanner.InitPropagation(this.retrieval.selectColumns)
+	this.retrieval.scanner.sql = this.Render()
+	return this.retrieval.scanner.Scan(db)
 }
 
 func (this *lolWhere) Render() string {
@@ -175,7 +297,12 @@ type {{index . 0 | ToLower | DotToUnderscore}}Stub struct { column }
 var {{index . 0 | ToLower | DotToUnderscore}}StubConst {{index . 0 | ToLower | DotToUnderscore}}Stub
 func {{index . 0 | Title | DotToUnderscore}}() *{{index . 0 | ToLower | DotToUnderscore}}Stub {return &{{index . 0 | ToLower | DotToUnderscore}}StubConst}
 func (*{{index . 0 | ToLower | DotToUnderscore}}Stub) Column() string {return "{{index . 1}}"}
+func (*{{index . 0 | ToLower | DotToUnderscore}}Stub) FieldName() string {return "{{index . 0 }}"}
 {{end}}
+
+var SelectAllColumns = []column{
+{{range .}}&{{index . 0 | ToLower | DotToUnderscore}}StubConst, {{end}}
+}
 `)
 
 var ConditionByField, _ = template.New("").Funcs(template.FuncMap{

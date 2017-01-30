@@ -35,9 +35,10 @@ var SupportedBasicTypes = map[string]bool{
 type PackageDefinition struct {
 	StructDefinitions map[string]StructDefinition
 	PackageDirPath string
+	ModelPackage string
 }
 
-func NewPackageDefinition(lolDirPath string, parsedStructs []*ParsedStruct) *PackageDefinition {
+func NewPackageDefinition(modelPackage string, lolDirPath string, parsedStructs []*ParsedStruct) *PackageDefinition {
 	structDefinitions := map[string]StructDefinition{}
 	for _, psdStruct := range parsedStructs {
 		strDef := psdStruct.ToStructDefinition()
@@ -47,8 +48,17 @@ func NewPackageDefinition(lolDirPath string, parsedStructs []*ParsedStruct) *Pac
 
 	return &PackageDefinition{
 		PackageDirPath:lolDirPath,
+		ModelPackage: modelPackage,
 		StructDefinitions:structDefinitions,
 	}
+}
+
+func (this *PackageDefinition) ModelPackageName() string {
+	index := strings.LastIndex(this.ModelPackage, "/")
+	if index > -1 {
+		return this.ModelPackage[index + 1:]
+	}
+	return this.ModelPackage
 }
 
 func (this *PackageDefinition) ColumnNames(structName string) []string {
@@ -201,6 +211,7 @@ type FieldDefinition interface {
 	fmt.Stringer
 	Name() string
 	FieldType() *FieldTypeDefinition
+	FetchMeta() *FetchMeta
 }
 
 type SimpleFieldDefinition struct {
@@ -208,6 +219,12 @@ type SimpleFieldDefinition struct {
 	Primary    bool
 	ColumnName string
 	fieldType  *FieldTypeDefinition
+}
+
+func (this *SimpleFieldDefinition) FetchMeta() *FetchMeta {
+	fm := this.fieldType.FetchMeta()
+	fm.FieldName = this.Name()
+	return fm
 }
 
 func (this *SimpleFieldDefinition) Name() string {
@@ -230,6 +247,10 @@ type ComplexFieldDefinition struct {
 	fieldType *FieldTypeDefinition
 }
 
+func (this *ComplexFieldDefinition) FetchMeta() *FetchMeta {
+	panic("Cannot work with it")
+}
+
 func (this *ComplexFieldDefinition) Name() string {
 	return this.name
 }
@@ -243,6 +264,13 @@ func (this *ComplexFieldDefinition) FieldType() *FieldTypeDefinition {
 	return this.fieldType
 }
 
+type FetchMeta struct{
+	FieldName string
+	FieldType string
+	NullableValueType string
+	NullableValueHolder string
+}
+
 type StructDefinition interface {
 	fmt.Stringer
 	Name() string
@@ -254,6 +282,17 @@ type TableStructDefinition struct {
 	name             string
 	TableName        string
 	fieldDefinitions []FieldDefinition
+}
+
+func (this *TableStructDefinition) FetchMeta() []*FetchMeta {
+	fmets := make([]*FetchMeta, 0 , len(this.FieldDefinitions()))
+	for _, fdef := range this.FieldDefinitions() {
+		switch fdef.(type) {
+		case *SimpleFieldDefinition:
+			fmets = append(fmets, fdef.FetchMeta())
+		}
+	}
+	return fmets
 }
 
 func (this *TableStructDefinition) String() string {
@@ -387,6 +426,35 @@ type FieldTypeDefinition struct {
 	Slice      bool
 	selector   string
 	Underlying *FieldTypeDefinition
+}
+
+var FetchTypes = map[string][]string {
+	"int":[]string{"sql.NullInt64", "Int64"},
+	"int8":[]string{"sql.NullInt64", "Int64"},
+	"int16":[]string{"sql.NullInt64", "Int64"},
+	"int32":[]string{"sql.NullInt64", "Int64"},
+	"int64":[]string{"sql.NullInt64", "Int64"},
+
+	"string":[]string{"sql.NullString", "String"},
+
+	"float32":[]string{"sql.NullFloat64", "Float64"},
+	"float64":[]string{"sql.NullFloat64", "Float64"},
+
+	"time.Time":[]string{"NullTime", "Time"},
+
+	"bool":[]string{"sql.NullBool", "Bool"},
+}
+
+func (this *FieldTypeDefinition) FetchMeta() *FetchMeta {
+	fm := &FetchMeta{}
+	if this.IsNullable() {
+		if fmHold, found := FetchTypes[this.Name()]; found {
+			fm.NullableValueType = fmHold[0]
+			fm.NullableValueHolder = fmHold[1]
+		}
+	}
+	fm.FieldType = this.Name()
+	return fm
 }
 
 func (this *FieldTypeDefinition) IsNullable() bool {
