@@ -3,7 +3,25 @@ package types
 import (
 	"time"
 	"fmt"
+	"database/sql/driver"
 )
+
+type CustomNullableUserType interface {
+	CustomUserType
+	IsNull() bool
+}
+
+type CustomUserType interface {
+	// This method used to initialise Go object with value retrieved from database
+	// Receive must be pointer.
+	// func (this *T) Scan(src interface{}) (err error) {...}
+	Scan(src interface{}) (err error)
+	// This method used to convert Go object to database representation.
+	// Supported types to return are: int64, float64, bool, []byte, string, time.Time
+	// Receive must be value.
+	// func (this T) Value() (driver.Value, error) {...}
+	Value() (driver.Value, error)
+}
 
 const timeFormat = "2006-01-02 15:04:05.999999"
 
@@ -31,13 +49,13 @@ func (this *NullTime) Scan(src interface{}) (err error) {
 	return
 }
 
-var parseblelength = map[int]bool {
+var parselength = map[int]bool {
 	10:true, 19:true, 21:true, 22:true, 23:true, 24:true, 25:true, 26:true,  // up to "YYYY-MM-DD HH:MM:SS.MMMMMM"
 }
 
 func parseDateTime(str string, loc *time.Location) (time.Time, error) {
 	t := time.Time{}
-	if parseblelength[len(str)] {
+	if parselength[len(str)] {
 		if str == "0000-00-00 00:00:00.0000000"[:len(str)] {
 			return t, nil
 		}
@@ -50,5 +68,5 @@ func parseDateTime(str string, loc *time.Location) (time.Time, error) {
 		}
 		return t, err
 	}
-	return t, fmt.Errorf("invalid time string: %s", str)
+	return t, fmt.Errorf("Invalid time string: %s", str)
 }

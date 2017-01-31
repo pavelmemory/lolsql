@@ -100,7 +100,7 @@ func EncloseWithPtrs(suffix, prefix string, strs ... *string) []string {
 
 func ToStrings(vals interface{}) [] string {
 	if value := reflect.ValueOf(vals); value.IsValid() {
-		res := []string{}
+		var res []string
 		switch value.Kind() {
 		case reflect.Array, reflect.Slice:
 			for i := 0; i < value.Len(); i++ {

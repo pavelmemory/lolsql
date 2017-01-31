@@ -12,13 +12,13 @@ func Parse(packageName string, sourceDir string) []*ParsedStruct {
 	pckg, err := build.Import(packageName, sourceDir, build.IgnoreVendor)
 	utils.PanicIf(err)
 
-	decls := []ast.Decl{}
+	var decls []ast.Decl
 	for _, goFile := range pckg.GoFiles {
 		decls = append(decls, parseFile(pckg.Dir + "/" + goFile)...)
 	}
 
-	var structs = map[string]*ast.StructType{}
-	var methods = map[string]map[string]*ast.FuncDecl{}
+	structs := map[string]*ast.StructType{}
+	methods := map[string]map[string]*ast.FuncDecl{}
 
 	for _, decl := range decls {
 		if genDecl, ok := decl.(*ast.GenDecl); ok {
@@ -50,7 +50,7 @@ func Parse(packageName string, sourceDir string) []*ParsedStruct {
 		}
 	}
 
-	ps := []*ParsedStruct{}
+	var ps []*ParsedStruct
 	for structName, structType := range structs {
 		ps = append(ps, &ParsedStruct{Name:structName, Type:structType, Methods:methods[structName]})
 	}

@@ -8,13 +8,10 @@ import (
 	"github.com/less-leg/utils"
 	"github.com/less-leg/parser"
 	"github.com/less-leg/sql/generator"
-	"fmt"
-	"database/sql"
-	"github.com/less-leg/dbmodel/lolsql/djangoadminlog"
 )
 
 func main() {
-	generate := false
+	generate := true
 
 	if generate {
 		packageDir := "github.com/less-leg/dbmodel"
@@ -43,13 +40,20 @@ func main() {
 		//fmt.Println(handsome.Select().Where(handsome.DateOfBirthIsNot(&now)).Or(handsome.SalaryIs(10.2, 100.2)).And(handsome.LoginLike("LoginLike", "LoginLike2")).Render())
 		//fmt.Println(handsome.Select().Where(handsome.DateOfBirthIsNot(&now)).Or(handsome.SalaryIs(10.2, 100.2)).And(handsome.LoginNotLike("LoginNotLike", "LoginNotLike2")).Render())
 
-		db, err := sql.Open("mysql", "root:root@/akeos?parseTime=true")
-		utils.PanicIf(err)
-		defer db.Close()
-		fmt.Println(djangoadminlog.Select().Where(djangoadminlog.ActionFlagIs(2)).Fetch(db))
-
-		/*
-
-		*/
+		//db, err := sql.Open("mysql", "root:root@/akeos?parseTime=true")
+		//utils.PanicIf(err)
+		//defer db.Close()
+		//rows, err := db.Query("select CONFIRMATION from django_admin_log where CONFIRMATION = ?", dbmodel.Yes)
+		//if err != nil {
+		//	panic(err)
+		//}
+		//rows.Next()
+		//var c dbmodel.Confirmation
+		//rows.Scan(&c)
+		//fmt.Printf("%v", c)
+		//
+		//dals, err := djangoadminlog.Select().Where(djangoadminlog.ObjectReprLike("Harry%", "Lol%").And(djangoadminlog.ActionFlagIs(1))).Fetch(db)
+		//fmt.Println(djangoadminlog.Select().Where(djangoadminlog.ObjectReprLike("Harry%", "Lol%").And(djangoadminlog.ActionFlagIs(1))).Render())
+		//fmt.Println(len(dals))
 	}
 }

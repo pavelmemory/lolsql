@@ -109,7 +109,7 @@ func (this *scanner) Scan(db *sql.DB) ([]*{{.Package}}.{{.StructName}}, error) {
 		return nil, err
 	}
 
-	fetched := []*{{.Package}}.{{.StructName}}{}
+	var fetched []*{{.Package}}.{{.StructName}}
 	for rows.Next() {
 		if err = rows.Scan(this.temporaries()...); err != nil {
 			if errClose := rows.Close(); errClose != nil {

@@ -11,31 +11,33 @@ const (
 	TableName = "TableName"
 )
 
-var SupportedBasicTypes = map[string]bool{
-	"int": true,
-	"int8": true,
-	"int16": true,
-	"int32": true,
-	"int64": true,
+var SupportedBasicTypes = map[string]NullableValueMeta{
+	"int": {NullableValueType:"sql.NullInt64", NullableValueHolder:"Int64"},
+	"int8": {NullableValueType:"sql.NullInt64", NullableValueHolder:"Int64"},
+	"int16": {NullableValueType:"sql.NullInt64", NullableValueHolder:"Int64"},
+	"int32": {NullableValueType:"sql.NullInt64", NullableValueHolder:"Int64"},
+	"int64": {NullableValueType:"sql.NullInt64", NullableValueHolder:"Int64"},
 
-	"uint": true,
-	"uint8": true,
-	"uint16": true,
-	"uint32": true,
-	"uint64": true,
+	"uint": {NullableValueType:"sql.NullInt64", NullableValueHolder:"Int64"},
+	"uint8": {NullableValueType:"sql.NullInt64", NullableValueHolder:"Int64"},
+	"uint16": {NullableValueType:"sql.NullInt64", NullableValueHolder:"Int64"},
+	"uint32": {NullableValueType:"sql.NullInt64", NullableValueHolder:"Int64"},
+	"uint64": {NullableValueType:"sql.NullInt64", NullableValueHolder:"Int64"},
 
-	"float32": true,
-	"float64": true,
+	"float32": {NullableValueType:"sql.NullFloat64", NullableValueHolder:"Float64"},
+	"float64": {NullableValueType:"sql.NullFloat64", NullableValueHolder:"Float64"},
 
-	"string": true,
+	"string": {NullableValueType:"sql.NullString", NullableValueHolder:"String"},
 
-	"time.Time": true,
+	"time.Time": {NullableValueType:"NullTime", NullableValueHolder:"Time"},
+
+	"bool": {NullableValueType:"sql.NullBool", NullableValueHolder:"Bool"},
 }
 
 type PackageDefinition struct {
-	StructDefinitions map[string]StructDefinition
-	PackageDirPath string
 	ModelPackage string
+	PackageDirPath string
+	StructDefinitions map[string]StructDefinition
 }
 
 func NewPackageDefinition(modelPackage string, lolDirPath string, parsedStructs []*ParsedStruct) *PackageDefinition {
@@ -43,12 +45,11 @@ func NewPackageDefinition(modelPackage string, lolDirPath string, parsedStructs 
 	for _, psdStruct := range parsedStructs {
 		strDef := psdStruct.ToStructDefinition()
 		structDefinitions[strDef.Name()] = strDef
-		fmt.Printf("%s\n", strDef.String())
 	}
 
 	return &PackageDefinition{
-		PackageDirPath:lolDirPath,
 		ModelPackage: modelPackage,
+		PackageDirPath:lolDirPath,
 		StructDefinitions:structDefinitions,
 	}
 }
@@ -62,7 +63,7 @@ func (this *PackageDefinition) ModelPackageName() string {
 }
 
 func (this *PackageDefinition) ColumnNames(structName string) []string {
-	cnames := []string{}
+	var cnames []string
 	if sdef, found := this.StructDefinitions[structName]; found {
 		for _, fdef := range sdef.FieldDefinitions() {
 			switch sfdef := fdef.(type) {
@@ -81,7 +82,7 @@ func (this *PackageDefinition) ColumnNames(structName string) []string {
 }
 
 func (this *PackageDefinition) FieldsToColumns(structName string) [][]string {
-	ftoc := [][]string{}
+	var ftoc [][]string
 	if sdef, found := this.StructDefinitions[structName]; found {
 		for _, fdef := range sdef.FieldDefinitions() {
 			switch sfdef := fdef.(type) {
@@ -104,7 +105,7 @@ func (this *PackageDefinition) FieldsToColumns(structName string) [][]string {
 }
 
 func (this *PackageDefinition) FieldToColumn(structName string) [][]string {
-	ftoc := [][]string{}
+	var ftoc [][]string
 	if sdef, found := this.StructDefinitions[structName]; found {
 		for _, fdef := range sdef.FieldDefinitions() {
 			switch sfdef := fdef.(type) {
@@ -149,6 +150,19 @@ func (this *ParsedStruct) TableName() string {
 }
 
 func (this *ParsedStruct) ToStructDefinition() StructDefinition {
+	// TODO: User defined types for entity fields
+	if scanMethod, found := this.Methods["Scan"]; found {
+		if scanMethod.Recv != nil &&
+			len(scanMethod.Recv.List) == 1 &&
+			scanMethod.Recv.List[0].Names[0].Name == this.Name &&
+			scanMethod.Type.Results != nil &&
+			scanMethod.Type.Results.NumFields() == 1 {
+			if tident, ok := scanMethod.Type.Results.List[0].Type.(*ast.Ident); ok && tident.Name == "error"{
+				fields, embeddable := this.FieldDefinitions()
+				return &CustomUserTypeStructDefinition{name:this.Name, fieldDefinitions:fields}
+			}
+		}
+	}
 	fields, embeddable := this.FieldDefinitions()
 	if embeddable {
 		return &EmbeddedStructDefinition{name:this.Name, fieldDefinitions:fields}
@@ -159,7 +173,7 @@ func (this *ParsedStruct) ToStructDefinition() StructDefinition {
 }
 
 func (this *ParsedStruct) FieldDefinitions() ([]FieldDefinition, bool) {
-	fdefs := []FieldDefinition{}
+	var fdefs []FieldDefinition
 	if this.Type.Fields == nil {
 		return fdefs, false
 	}
@@ -170,9 +184,8 @@ func (this *ParsedStruct) FieldDefinitions() ([]FieldDefinition, bool) {
 		ftypedef := fieldTypeDefinition(field.Type)
 		if len(field.Names) == 0 {
 			if ftypedef.IsBasic() {
-				panic("Embedded basic field")
+				fdefs = append(fdefs, &ComplexFieldDefinition{name:ftypedef.Name(), Embedded:true, fieldType:ftypedef})
 			}
-			fdefs = append(fdefs, &ComplexFieldDefinition{name:ftypedef.Name(), Embedded:true, fieldType:ftypedef})
 		} else {
 			if ftypedef.IsBasic() {
 				tconf := NewTagConfig(field)
@@ -264,11 +277,15 @@ func (this *ComplexFieldDefinition) FieldType() *FieldTypeDefinition {
 	return this.fieldType
 }
 
+type NullableValueMeta struct {
+	NullableValueType string
+	NullableValueHolder string
+}
+
 type FetchMeta struct{
 	FieldName string
 	FieldType string
-	NullableValueType string
-	NullableValueHolder string
+	NullableValueMeta
 }
 
 type StructDefinition interface {
@@ -296,7 +313,7 @@ func (this *TableStructDefinition) FetchMeta() []*FetchMeta {
 }
 
 func (this *TableStructDefinition) String() string {
-	fdstr := []string{}
+	var fdstr []string
 	for _, fd := range this.fieldDefinitions {
 		fdstr = append(fdstr, fd.String())
 	}
@@ -316,7 +333,7 @@ func (this *TableStructDefinition) FieldDefinitions() []FieldDefinition {
 }
 
 func (this *TableStructDefinition) Selectors() []string {
-	slcrs := []string{}
+	var slcrs []string
 	for _, fdef := range this.fieldDefinitions {
 		if sel := fdef.FieldType().Selector(); sel != "" {
 			slcrs = append(slcrs, sel)
@@ -331,7 +348,7 @@ type EmbeddedStructDefinition struct {
 }
 
 func (this *EmbeddedStructDefinition) String() string {
-	fdstr := []string{}
+	var fdstr []string
 	for _, fd := range this.fieldDefinitions {
 		fdstr = append(fdstr, fd.String())
 	}
@@ -351,11 +368,16 @@ func (this *EmbeddedStructDefinition) FieldDefinitions() []FieldDefinition {
 }
 
 func (this *EmbeddedStructDefinition) Selectors() []string {
-	slcrs := []string{}
+	var slcrs []string
 	for _, fdef := range this.fieldDefinitions {
 		slcrs = append(slcrs, fdef.FieldType().Selector())
 	}
 	return slcrs
+}
+
+type CustomUserTypeStructDefinition struct {
+	name string
+	fieldDefinitions []FieldDefinition
 }
 
 type TagConfig struct {
@@ -389,16 +411,7 @@ func isPrimary(tag string) bool {
 	return strings.Index(tag, "id[true]") >= 0
 }
 
-//const MaxColumnNameLength = 32
-//var ColumnReg, _ = regexp.Compile(`.*(column\[.{1,` + strconv.Itoa(MaxColumnNameLength) + `}\]).*`)
-
 func columnName(field *ast.Field, tag string) string {
-	//regColName := ColumnReg.FindStringSubmatch(tag)
-	//if len(regColName) == 2 {
-	//	return regColName[1]
-	//}
-	//return field.Names[0].Name
-
 	colName := field.Names[0].Name
 	colTagStart := strings.Index(tag, "column[")
 	if colTagStart >= 0 {
@@ -420,7 +433,6 @@ func fieldName(field *ast.Field) string {
 }
 
 type FieldTypeDefinition struct {
-	fmt.Stringer
 	name       string
 	Ptr        bool
 	Slice      bool
@@ -428,29 +440,12 @@ type FieldTypeDefinition struct {
 	Underlying *FieldTypeDefinition
 }
 
-var FetchTypes = map[string][]string {
-	"int":[]string{"sql.NullInt64", "Int64"},
-	"int8":[]string{"sql.NullInt64", "Int64"},
-	"int16":[]string{"sql.NullInt64", "Int64"},
-	"int32":[]string{"sql.NullInt64", "Int64"},
-	"int64":[]string{"sql.NullInt64", "Int64"},
-
-	"string":[]string{"sql.NullString", "String"},
-
-	"float32":[]string{"sql.NullFloat64", "Float64"},
-	"float64":[]string{"sql.NullFloat64", "Float64"},
-
-	"time.Time":[]string{"NullTime", "Time"},
-
-	"bool":[]string{"sql.NullBool", "Bool"},
-}
-
 func (this *FieldTypeDefinition) FetchMeta() *FetchMeta {
 	fm := &FetchMeta{}
 	if this.IsNullable() {
-		if fmHold, found := FetchTypes[this.Name()]; found {
-			fm.NullableValueType = fmHold[0]
-			fm.NullableValueHolder = fmHold[1]
+		if fmHold, found := SupportedBasicTypes[this.Name()]; found {
+			fm.NullableValueType = fmHold.NullableValueType
+			fm.NullableValueHolder = fmHold.NullableValueHolder
 		}
 	}
 	fm.FieldType = this.Name()
@@ -472,7 +467,8 @@ func (this *FieldTypeDefinition) PtrSign() string {
 }
 
 func (this *FieldTypeDefinition) IsBasic() bool {
-	return SupportedBasicTypes[this.Name()]
+	_, found := SupportedBasicTypes[this.Name()]
+	return found
 }
 
 func (this *FieldTypeDefinition) String() string {
