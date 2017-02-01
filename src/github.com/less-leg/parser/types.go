@@ -158,7 +158,7 @@ func (this *ParsedStruct) ToStructDefinition() StructDefinition {
 			scanMethod.Type.Results != nil &&
 			scanMethod.Type.Results.NumFields() == 1 {
 			if tident, ok := scanMethod.Type.Results.List[0].Type.(*ast.Ident); ok && tident.Name == "error"{
-				fields, embeddable := this.FieldDefinitions()
+				fields, _ := this.FieldDefinitions()
 				return &CustomUserTypeStructDefinition{name:this.Name, fieldDefinitions:fields}
 			}
 		}
@@ -317,7 +317,7 @@ func (this *TableStructDefinition) String() string {
 	for _, fd := range this.fieldDefinitions {
 		fdstr = append(fdstr, fd.String())
 	}
-	return fmt.Sprintf("Struct[%s] Table[%s] Fields[\n\t%s]", this.name, this.TableName, strings.Join(fdstr, "\n\t"))
+	return fmt.Sprintf("TableStructDefinition[%s] Table[%s] Fields[\n\t%s]", this.name, this.TableName, strings.Join(fdstr, "\n\t"))
 }
 
 func (this *TableStructDefinition) Name() string {
@@ -352,7 +352,7 @@ func (this *EmbeddedStructDefinition) String() string {
 	for _, fd := range this.fieldDefinitions {
 		fdstr = append(fdstr, fd.String())
 	}
-	return fmt.Sprintf("EmbeddedStruct[%s] Fields[\n\t%s]", this.name, strings.Join(fdstr, "\n\t"))
+	return fmt.Sprintf("EmbeddedStructDefinition[%s] Fields[\n\t%s]", this.name, strings.Join(fdstr, "\n\t"))
 }
 
 func (this *EmbeddedStructDefinition) Name() string {
@@ -376,8 +376,29 @@ func (this *EmbeddedStructDefinition) Selectors() []string {
 }
 
 type CustomUserTypeStructDefinition struct {
-	name string
+	name             string
+	selectors        []string
 	fieldDefinitions []FieldDefinition
+}
+
+func (this *CustomUserTypeStructDefinition) FieldDefinitions() []FieldDefinition {
+	return this.fieldDefinitions
+}
+
+func (this *CustomUserTypeStructDefinition) Name() string {
+	return this.name
+}
+
+func (this *CustomUserTypeStructDefinition) Selectors() []string {
+	return this.selectors
+}
+
+func (this *CustomUserTypeStructDefinition) String() string {
+	var fdstr []string
+	for _, fd := range this.fieldDefinitions {
+		fdstr = append(fdstr, fd.String())
+	}
+	return fmt.Sprintf("CustomUserTypeStructDefinition[%s] Fields[\n\t%s]", this.name, strings.Join(fdstr, "\n\t"))
 }
 
 type TagConfig struct {
