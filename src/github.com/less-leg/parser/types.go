@@ -43,8 +43,8 @@ type PackageDefinition struct {
 func NewPackageDefinition(modelPackage string, lolDirPath string, parsedStructs []*ParsedStruct) *PackageDefinition {
 	structDefinitions := map[string]StructDefinition{}
 	for _, psdStruct := range parsedStructs {
-		strDef := psdStruct.ToStructDefinition()
-		structDefinitions[strDef.Name()] = strDef
+		sdef := psdStruct.ToStructDefinition(modelPackage)
+		structDefinitions[sdef.Name()] = sdef
 	}
 
 	return &PackageDefinition{
@@ -95,6 +95,8 @@ func (this *PackageDefinition) FieldsToColumns(structName string) [][]string {
 						embftoc[0] = sfdef.name + "." + embftoc[0]
 					}
 					ftoc = append(ftoc, embftocs...)
+				} else {
+					ftoc = append(ftoc, []string{sfdef.Name(), sfdef.ColumnName})
 				}
 			}
 		}
@@ -149,72 +151,121 @@ func (this *ParsedStruct) TableName() string {
 	return this.Name
 }
 
-func (this *ParsedStruct) ToStructDefinition() StructDefinition {
-	// TODO: User defined types for entity fields
+func (this *ParsedStruct) ToStructDefinition(modelPackage string) StructDefinition {
 	if scanMethod, found := this.Methods["Scan"]; found {
-		if scanMethod.Recv != nil &&
-			len(scanMethod.Recv.List) == 1 &&
-			scanMethod.Recv.List[0].Names[0].Name == this.Name &&
-			scanMethod.Type.Results != nil &&
-			scanMethod.Type.Results.NumFields() == 1 {
-			if tident, ok := scanMethod.Type.Results.List[0].Type.(*ast.Ident); ok && tident.Name == "error"{
-				fields, _ := this.FieldDefinitions()
-				return &CustomUserTypeStructDefinition{name:this.Name, fieldDefinitions:fields}
-			}
+		return &CustomUserTypeStructDefinition{
+			name:this.Name,
+			scan:methodHasSignature(scanMethod, []string{"interface"}, []string{"error"}),
+			value: methodHasSignature(this.Methods["Value"], nil, []string{"Value", "error"}),
 		}
 	}
-	fields, embeddable := this.FieldDefinitions()
+
+	fields, embeddable := this.FieldDefinitions(modelPackage)
 	if embeddable {
-		return &EmbeddedStructDefinition{name:this.Name, fieldDefinitions:fields}
+		return &EmbeddedStructDefinition{
+			name:this.Name,
+			fieldDefinitions:fields,
+		}
 	} else {
 		tableName := this.TableName()
-		return &TableStructDefinition{name:this.Name, TableName:tableName, fieldDefinitions:fields}
+		return &TableStructDefinition{
+			name:this.Name,
+			TableName:tableName,
+			fieldDefinitions:fields,
+		}
 	}
 }
 
-func (this *ParsedStruct) FieldDefinitions() ([]FieldDefinition, bool) {
+// TODO: this function doesn't take into account selectors for parameter types and return types
+func methodHasSignature(fdecl *ast.FuncDecl, paramTypeNames []string, returnTypeNames []string) bool {
+	if fdecl == nil { return false }
+	return checkHasAll(fdecl.Type.Params, paramTypeNames) && checkHasAll(fdecl.Type.Results, returnTypeNames)
+}
+
+func checkHasAll(fieldList *ast.FieldList, expectedTypeNames []string) bool {
+	if len(expectedTypeNames) > 0 && fieldList != nil && len(fieldList.List) == len(expectedTypeNames) {
+		for indx, field := range fieldList.List {
+			if selector, ok := field.Type.(*ast.SelectorExpr); ok {
+				if selector.Sel.Name != expectedTypeNames[indx] {
+					return false
+					//if ident, ok := selector.X.(*ast.Ident); ok {
+					//	if ident.Name == "driver" {
+					//		resultError := results.List[1]
+					//		if ident, ok := resultError.Type.(*ast.Ident); ok && ident.Name == "error" {
+					//
+					//		}
+					//	}
+					//}
+				}
+			} else if ident, ok := field.Type.(*ast.Ident); ok {
+				if ident.Name != expectedTypeNames[indx] {
+					return false
+				}
+			}
+		}
+	}
+	return true
+}
+
+func (this *ParsedStruct) FieldDefinitions(modelPackage string) ([]FieldDefinition, bool) {
 	var fdefs []FieldDefinition
 	if this.Type.Fields == nil {
 		return fdefs, false
 	}
 
 	embeddable := true
+	fmt.Println(modelPackage)
+	packageName := string(modelPackage[strings.LastIndex(modelPackage, "/") + 1:])
 
 	for _, field := range this.Type.Fields.List {
-		ftypedef := fieldTypeDefinition(field.Type)
+		ftypedef := fieldTypeDefinition(field.Type, packageName)
 		if len(field.Names) == 0 {
 			if ftypedef.IsBasic() {
-				fdefs = append(fdefs, &ComplexFieldDefinition{name:ftypedef.Name(), Embedded:true, fieldType:ftypedef})
+				fdefs = append(fdefs, &ComplexFieldDefinition{
+					name:ftypedef.Name(),
+					Embedded:true,
+					fieldType:ftypedef,
+				})
 			}
 		} else {
+			tconf := NewTagConfig(field)
+			embeddable = embeddable && !tconf.Primary
+			var fdef FieldDefinition
 			if ftypedef.IsBasic() {
-				tconf := NewTagConfig(field)
-				sdef := &SimpleFieldDefinition{
+				fdef = &SimpleFieldDefinition{
 					name:field.Names[0].Name,
 					Primary:tconf.Primary,
 					ColumnName:tconf.ColumnName,
 					fieldType:ftypedef,
 				}
-				fdefs = append(fdefs, sdef)
-				embeddable = embeddable && !tconf.Primary
 			} else {
-				fdefs = append(fdefs, &ComplexFieldDefinition{name:fieldName(field), fieldType:ftypedef})
+				fdef = &ComplexFieldDefinition{
+					name:fieldName(field),
+					fieldType:ftypedef,
+					ColumnName:tconf.ColumnName,
+					// TODO package name
+				}
 			}
+			fdefs = append(fdefs, fdef)
 		}
 	}
 	return fdefs, embeddable
 }
 
-func fieldTypeDefinition(expr ast.Expr) *FieldTypeDefinition {
+func fieldTypeDefinition(expr ast.Expr, packageName string) *FieldTypeDefinition {
 	switch expt := expr.(type) {
 	case *ast.ArrayType:
-		return &FieldTypeDefinition{Slice:true, Underlying:fieldTypeDefinition(expt.Elt)}
+		return &FieldTypeDefinition{Slice:true, Underlying:fieldTypeDefinition(expt.Elt, packageName)}
 	case *ast.Ident:
-		return &FieldTypeDefinition{name:expt.Name}
+		if _, found := SupportedBasicTypes[expt.Name]; found {
+			return &FieldTypeDefinition{name:expt.Name, likable:expt.Name == "string"}
+		} else {
+			return &FieldTypeDefinition{selector:packageName, Underlying:&FieldTypeDefinition{name:expt.Name, likable:expt.Name == "string"}}
+		}
 	case *ast.SelectorExpr:
 		return &FieldTypeDefinition{selector:expt.X.(*ast.Ident).Name, Underlying:&FieldTypeDefinition{name:expt.Sel.Name}}
 	case *ast.StarExpr:
-		return &FieldTypeDefinition{Ptr:true, Underlying:fieldTypeDefinition(expt.X)}
+		return &FieldTypeDefinition{Ptr:true, Underlying:fieldTypeDefinition(expt.X, packageName)}
 	default:
 		panic(fmt.Sprintf("Not supported relation: %#v ", expr))
 	}
@@ -254,14 +305,16 @@ func (this *SimpleFieldDefinition) String() string {
 }
 
 type ComplexFieldDefinition struct {
-	fmt.Stringer
 	name      string
+	ColumnName string
 	Embedded  bool
 	fieldType *FieldTypeDefinition
 }
 
 func (this *ComplexFieldDefinition) FetchMeta() *FetchMeta {
-	panic("Cannot work with it")
+	fm := this.fieldType.FetchMeta()
+	fm.FieldName = this.Name()
+	return fm
 }
 
 func (this *ComplexFieldDefinition) Name() string {
@@ -292,7 +345,7 @@ type StructDefinition interface {
 	fmt.Stringer
 	Name() string
 	FieldDefinitions() []FieldDefinition
-	Selectors() []string
+	Selectors(except string) []string
 }
 
 type TableStructDefinition struct {
@@ -304,10 +357,7 @@ type TableStructDefinition struct {
 func (this *TableStructDefinition) FetchMeta() []*FetchMeta {
 	fmets := make([]*FetchMeta, 0 , len(this.FieldDefinitions()))
 	for _, fdef := range this.FieldDefinitions() {
-		switch fdef.(type) {
-		case *SimpleFieldDefinition:
-			fmets = append(fmets, fdef.FetchMeta())
-		}
+		fmets = append(fmets, fdef.FetchMeta())
 	}
 	return fmets
 }
@@ -332,10 +382,10 @@ func (this *TableStructDefinition) FieldDefinitions() []FieldDefinition {
 	return this.fieldDefinitions
 }
 
-func (this *TableStructDefinition) Selectors() []string {
+func (this *TableStructDefinition) Selectors(except string) []string {
 	var slcrs []string
 	for _, fdef := range this.fieldDefinitions {
-		if sel := fdef.FieldType().Selector(); sel != "" {
+		if sel := fdef.FieldType().Selector(); sel != "" && sel != except {
 			slcrs = append(slcrs, sel)
 		}
 	}
@@ -367,7 +417,7 @@ func (this *EmbeddedStructDefinition) FieldDefinitions() []FieldDefinition {
 	return this.fieldDefinitions
 }
 
-func (this *EmbeddedStructDefinition) Selectors() []string {
+func (this *EmbeddedStructDefinition) Selectors(except string) []string {
 	var slcrs []string
 	for _, fdef := range this.fieldDefinitions {
 		slcrs = append(slcrs, fdef.FieldType().Selector())
@@ -377,6 +427,8 @@ func (this *EmbeddedStructDefinition) Selectors() []string {
 
 type CustomUserTypeStructDefinition struct {
 	name             string
+	scan             bool
+	value            bool
 	selectors        []string
 	fieldDefinitions []FieldDefinition
 }
@@ -389,7 +441,7 @@ func (this *CustomUserTypeStructDefinition) Name() string {
 	return this.name
 }
 
-func (this *CustomUserTypeStructDefinition) Selectors() []string {
+func (this *CustomUserTypeStructDefinition) Selectors(except string) []string {
 	return this.selectors
 }
 
@@ -458,7 +510,15 @@ type FieldTypeDefinition struct {
 	Ptr        bool
 	Slice      bool
 	selector   string
+	likable    bool
 	Underlying *FieldTypeDefinition
+}
+
+func (this *FieldTypeDefinition) IsLikable() bool {
+	if this.Underlying != nil {
+		return this.Underlying.IsLikable()
+	}
+	return this.likable
 }
 
 func (this *FieldTypeDefinition) FetchMeta() *FetchMeta {

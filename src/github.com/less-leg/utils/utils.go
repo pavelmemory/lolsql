@@ -294,61 +294,6 @@ func TimePtrToString(ints ... *time.Time)[] string {
 	return istrs
 }
 
-func PrependString(v0 string, vnext []string) []string {
-	buf := make([]string, 0, 1 + len(vnext))
-	buf = append(buf, v0)
-	return append(buf, vnext...)
-}
-
-func PrependInt(v0 int, vnext []int) []int {
-	buf := make([]int, 0, 1 + len(vnext))
-	buf = append(buf, v0)
-	return append(buf, vnext...)
-}
-
-func PrependInt8(v0 int8, vnext []int8) []int8 {
-	buf := make([]int8, 0, 1 + len(vnext))
-	buf = append(buf, v0)
-	return append(buf, vnext...)
-}
-
-func PrependInt16(v0 int16, vnext []int16) []int16 {
-	buf := make([]int16, 0, 1 + len(vnext))
-	buf = append(buf, v0)
-	return append(buf, vnext...)
-}
-
-func PrependInt32(v0 int32, vnext []int32) []int32 {
-	buf := make([]int32, 0, 1 + len(vnext))
-	buf = append(buf, v0)
-	return append(buf, vnext...)
-}
-
-func PrependInt64(v0 int64, vnext []int64) []int64 {
-	buf := make([]int64, 0, 1 + len(vnext))
-	buf = append(buf, v0)
-	return append(buf, vnext...)
-}
-
-func PrependFloat32(v0 float32, vnext []float32) []float32 {
-	buf := make([]float32, 0, 1 + len(vnext))
-	buf = append(buf, v0)
-	return append(buf, vnext...)
-}
-
-func PrependFloat64(v0 float64, vnext []float64) []float64 {
-	buf := make([]float64, 0, 1 + len(vnext))
-	buf = append(buf, v0)
-	return append(buf, vnext...)
-}
-
-func PrependTime_Time(v0 time.Time, vnext []time.Time) []time.Time {
-	buf := make([]time.Time, 0, 1 + len(vnext))
-	buf = append(buf, v0)
-	return append(buf, vnext...)
-}
-
-
 func Set(to interface{}, value interface{}) {
 	valueOfTo := reflect.ValueOf(to)
 	for valueOfTo.Kind() == reflect.Ptr {

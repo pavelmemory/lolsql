@@ -21,31 +21,25 @@ func Parse(packageName string, sourceDir string) []*ParsedStruct {
 	methods := map[string]map[string]*ast.FuncDecl{}
 
 	for _, decl := range decls {
-		if genDecl, ok := decl.(*ast.GenDecl); ok {
-			for _, spec := range genDecl.Specs {
+		switch decl := decl.(type) {
+		case *ast.GenDecl:
+			for _, spec := range decl.Specs {
 				if tspec, ok := spec.(*ast.TypeSpec); ok {
 					if stype, ok := tspec.Type.(*ast.StructType); ok {
 						structs[tspec.Name.Name] = stype
 					}
 				}
 			}
-		} else if funcDecl, ok := decl.(*ast.FuncDecl); ok && funcDecl.Recv != nil && len(funcDecl.Recv.List) == 1 {
-			for _, recv := range funcDecl.Recv.List {
-				if star, ok := recv.Type.(*ast.StarExpr); ok {
-					if ident, ok := star.X.(*ast.Ident); ok {
-						if ms, found := methods[ident.Name]; found {
-							ms[funcDecl.Name.Name] = funcDecl;
-						} else {
-							methods[ident.Name] = map[string]*ast.FuncDecl{funcDecl.Name.Name: funcDecl}
-						}
-					}
-				} else if ident, ok := recv.Type.(*ast.Ident); ok {
-					if ms, found := methods[ident.Name]; found {
-						ms[funcDecl.Name.Name] = funcDecl;
-					} else {
-						methods[ident.Name] = map[string]*ast.FuncDecl{funcDecl.Name.Name: funcDecl}
-					}
-				}
+		case *ast.FuncDecl:
+			if decl.Recv == nil || len(decl.Recv.List) != 1 {
+				break
+			}
+
+			recvType := decl.Recv.List[0].Type
+			if star, ok := recvType.(*ast.StarExpr); ok {
+				addMethod(star.X, decl, methods)
+			} else {
+				addMethod(recvType, decl, methods)
 			}
 		}
 	}
@@ -55,6 +49,17 @@ func Parse(packageName string, sourceDir string) []*ParsedStruct {
 		ps = append(ps, &ParsedStruct{Name:structName, Type:structType, Methods:methods[structName]})
 	}
 	return ps
+}
+
+func addMethod(expr ast.Expr, decl *ast.FuncDecl, methods map[string]map[string]*ast.FuncDecl) {
+	if ident, ok := expr.(*ast.Ident); ok {
+		if ms, found := methods[ident.Name]; found {
+			ms[decl.Name.Name] = decl;
+		} else {
+			methods[ident.Name] = make(map[string]*ast.FuncDecl)
+			methods[ident.Name][decl.Name.Name] = decl
+		}
+	}
 }
 
 func parseFile(path string) []ast.Decl {

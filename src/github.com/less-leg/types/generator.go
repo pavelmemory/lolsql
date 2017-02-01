@@ -246,6 +246,7 @@ func renderSingle(condition interface{}, comparator string) string {
 		return tcondition.Column() + comparator + utils.Quote((*tcondition.Values()[0]).Format("2006-01-02 15:04:05"))
 
 	default:
+		// TODO: Custom User types must provide mechanism to propagate them to sql query
 		panic("Not supported type")
 	}
 }

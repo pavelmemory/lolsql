@@ -27,7 +27,7 @@ func Generate(pckgDef *parser.PackageDefinition) {
 				`"database/sql"`,
 				`"fmt"`,
 				`"github.com/less-leg/utils"`},
-				utils.DoubleQuotes(append([]string{pckgDef.ModelPackage}, sdef.Selectors()...)...)...))
+				utils.DoubleQuotes(append([]string{pckgDef.ModelPackage}, sdef.Selectors(pckgDef.ModelPackageName())...)...)...))
 
 			Column_interface.ExecuteTemplate(entityFile, "", nil)
 
@@ -71,6 +71,9 @@ func Generate(pckgDef *parser.PackageDefinition) {
 			utils.PanicIf(entityFile.Close())
 
 		case *parser.EmbeddedStructDefinition:
+			//fmt.Printf("%#v\n", sdef)
+		case *parser.CustomUserTypeStructDefinition:
+			//fmt.Printf("%#v\n", sdef)
 		default:
 			panic("Unreachable code")
 		}
@@ -93,7 +96,7 @@ func generateFields(entityFile io.Writer, pckgDef *parser.PackageDefinition, sde
 				StructName: sdef.Name(),
 				IsNullable: fdef.FieldType().PtrSign(),
 				FieldToColumn: []string{fdef.Name(), fdef.ColumnName},
-				Likable: fdef.FieldType().Name() == "string",
+				Likable: fdef.FieldType().IsLikable(),
 				Selector: selector,
 			})
 		case *parser.ComplexFieldDefinition:
@@ -101,6 +104,24 @@ func generateFields(entityFile io.Writer, pckgDef *parser.PackageDefinition, sde
 				if embdStrtDef, found := pckgDef.StructDefinitions[fdef.Name()]; found {
 					generateFields(entityFile, pckgDef, embdStrtDef, fdef.Name())
 				}
+			} else {
+				fmt.Println(fdef)
+
+				ConditionByField.ExecuteTemplate(entityFile, "", struct {
+					TypeName string
+					StructName string
+					IsNullable string
+					FieldToColumn []string
+					Likable bool
+					Selector string
+				}{
+					TypeName:   fdef.FieldType().Name(),
+					StructName: sdef.Name(),
+					IsNullable: fdef.FieldType().PtrSign(),
+					FieldToColumn: []string{fdef.Name(), fdef.ColumnName},
+					Likable: fdef.FieldType().IsLikable(),
+					Selector: selector,
+				})
 			}
 		}
 	}

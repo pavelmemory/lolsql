@@ -354,11 +354,11 @@ func {{index .FieldToColumn 0 | Title}}IsNot(values ...{{.IsNullable}}{{.TypeNam
 }
 {{else}}
 func {{index .FieldToColumn 0 | Title}}Is(v0 {{.IsNullable}}{{.TypeName}}, vnext ...{{.IsNullable}}{{.TypeName}}) LolCondition {
-	return &{{index .FieldToColumn 0 | ToLower}}{{Title .StructName}}{values:utils.Prepend{{Title .TypeName | DotToUnderscore}}(v0, vnext), operation:DefineAmount(v0, vnext) | Equals}
+	return &{{index .FieldToColumn 0 | ToLower}}{{Title .StructName}}{values:append([]{{.TypeName}}{v0}, vnext...), operation:DefineAmount(v0, vnext) | Equals}
 }
 
 func {{index .FieldToColumn 0 | Title}}IsNot(v0 {{.IsNullable}}{{.TypeName}}, vnext ...{{.IsNullable}}{{.TypeName}}) LolCondition {
-	return &{{index .FieldToColumn 0 | ToLower}}{{Title .StructName}}{values:utils.Prepend{{Title .TypeName | DotToUnderscore}}(v0, vnext), operation:DefineAmount(v0, vnext) | Not | Equals}
+	return &{{index .FieldToColumn 0 | ToLower}}{{Title .StructName}}{values:append([]{{.TypeName}}{v0}, vnext...), operation:DefineAmount(v0, vnext) | Not | Equals}
 }
 {{end}}
 
@@ -372,11 +372,11 @@ func {{index .FieldToColumn 0 | Title}}NotLike(values ...{{.IsNullable}}{{.TypeN
 }
 {{else}}
 func {{index .FieldToColumn 0 | Title}}Like(v0 {{.TypeName}}, vnext ...{{.TypeName}}) LolCondition {
-	return &{{index .FieldToColumn 0 | ToLower}}{{Title .StructName}}{values:utils.PrependString(v0, vnext), operation:DefineAmount(v0, vnext) | Like}
+	return &{{index .FieldToColumn 0 | ToLower}}{{Title .StructName}}{values:append([]{{.TypeName}}{v0}, vnext...), operation:DefineAmount(v0, vnext) | Like}
 }
 
 func {{index .FieldToColumn 0 | Title}}NotLike(v0 {{.TypeName}}, vnext ...{{.TypeName}}) LolCondition {
-	return &{{index .FieldToColumn 0 | ToLower}}{{Title .StructName}}{values:utils.PrependString(v0, vnext), operation:DefineAmount(v0, vnext) | Not | Like}
+	return &{{index .FieldToColumn 0 | ToLower}}{{Title .StructName}}{values:append([]{{.TypeName}}{v0}, vnext...), operation:DefineAmount(v0, vnext) | Not | Like}
 }
 {{end}}{{end}}
 `)
