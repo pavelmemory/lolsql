@@ -340,3 +340,20 @@ var ConditionRenderingMap = map[ConditionConstant]func(interface{}) string{
 	Like | Multi: renderLikeStrings,
 	Not | Like | Multi: renderNotLikeStrings,
 }
+
+var ConditionSignMap = map[ConditionConstant]func(column string, values interface{}) string {
+	Equals | Null: func(column string, values interface{}) string { return column + " is null" },
+	Equals | Not | Null: func(column string, values interface{}) string { return column + " is not null" },
+
+	Equals | Single: func(column string, values interface{}) string { return column + " = ?" },
+	Not | Equals | Single: func(column string, values interface{}) string { return column + " <> ?" },
+
+	Like | Single: func(column string, values interface{}) string { return column + " like ?" },
+	Not | Like | Single: func(column string, values interface{}) string { return column + " not like ?" },
+
+	Equals | Multi: func(column string, values interface{}) string { return column + " in(" + strings.Repeat("?,", utils.Length(values) - 1) + "?)"},
+	Not | Equals | Multi: func(column string, values interface{}) string { return column + " not in(" + strings.Repeat("?,", utils.Length(values) - 1) + "?)"},
+
+	Like | Multi: func(column string, values interface{}) string { return strings.Repeat(column + " like ? or ", utils.Length(values) - 1) + column + " like ?"},
+	Not | Like | Multi: func(column string, values interface{}) string { return strings.Repeat(column + " not like ? and ", utils.Length(values) - 1) + column + " not like ?"},
+}

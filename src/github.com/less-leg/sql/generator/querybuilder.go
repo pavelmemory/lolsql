@@ -105,8 +105,6 @@ func generateFields(entityFile io.Writer, pckgDef *parser.PackageDefinition, sde
 					generateFields(entityFile, pckgDef, embdStrtDef, fdef.Name())
 				}
 			} else {
-				fmt.Println(fdef)
-
 				ConditionByField.ExecuteTemplate(entityFile, "", struct {
 					TypeName string
 					StructName string

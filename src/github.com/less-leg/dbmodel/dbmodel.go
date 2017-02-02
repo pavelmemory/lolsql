@@ -12,6 +12,6 @@ func (_ *Person) TableName() string {
 
 type Name struct {
 	FirstName  string  `lolsql:"column[FIRST_NAME]"`
-	SecondName *string `lolsql:"column[SECOND_NAME]"`
-	MiddleName *string `lolsql:"column[MIDDLE_NAME]"`
+	//SecondName *string `lolsql:"column[SECOND_NAME]"`
+	//MiddleName *string `lolsql:"column[MIDDLE_NAME]"`
 }

@@ -214,7 +214,6 @@ func (this *ParsedStruct) FieldDefinitions(modelPackage string) ([]FieldDefiniti
 	}
 
 	embeddable := true
-	fmt.Println(modelPackage)
 	packageName := string(modelPackage[strings.LastIndex(modelPackage, "/") + 1:])
 
 	for _, field := range this.Type.Fields.List {

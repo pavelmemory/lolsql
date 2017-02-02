@@ -321,6 +321,7 @@ func (this *{{index .FieldToColumn 0 | ToLower}}{{Title .StructName}}) Values() 
 }
 
 func (this *{{index .FieldToColumn 0 | ToLower}}{{Title .StructName}}) render() string {
+	// return ConditionSignMap[this.operation](this.Column(), this.Values())
 	if conditionRenderer, found := ConditionRenderingMap[this.operation]; found {
 		return conditionRenderer(this)
 	}
@@ -345,12 +346,12 @@ func (this *{{index .FieldToColumn 0 | ToLower}}{{Title .StructName}}) Or(cond L
 }
 
 {{if .IsNullable}}
-func {{index .FieldToColumn 0 | Title}}Is(values ...{{.IsNullable}}{{.TypeName}}) LolCondition {
-	return &{{index .FieldToColumn 0 | ToLower}}{{Title .StructName}}{values:values, operation:DefineAmount(values, nil) | Equals}
+func {{index .FieldToColumn 0 | Title}}IsNull() LolCondition {
+	return &{{index .FieldToColumn 0 | ToLower}}{{Title .StructName}}{values:nil, operation: Equals | Null}
 }
 
-func {{index .FieldToColumn 0 | Title}}IsNot(values ...{{.IsNullable}}{{.TypeName}}) LolCondition {
-	return &{{index .FieldToColumn 0 | ToLower}}{{Title .StructName}}{values:values, operation:DefineAmount(values, nil) | Not | Equals}
+func {{index .FieldToColumn 0 | Title}}IsNotNull() LolCondition {
+	return &{{index .FieldToColumn 0 | ToLower}}{{Title .StructName}}{values:nil, operation: Not | Equals | Null}
 }
 {{else}}
 func {{index .FieldToColumn 0 | Title}}Is(v0 {{.IsNullable}}{{.TypeName}}, vnext ...{{.IsNullable}}{{.TypeName}}) LolCondition {
@@ -362,15 +363,7 @@ func {{index .FieldToColumn 0 | Title}}IsNot(v0 {{.IsNullable}}{{.TypeName}}, vn
 }
 {{end}}
 
-{{if .Likable}}{{if .IsNullable}}
-func {{index .FieldToColumn 0 | Title}}Like(values ...{{.IsNullable}}{{.TypeName}}) LolCondition {
-	return &{{index .FieldToColumn 0 | ToLower}}{{Title .StructName}}{values:values, operation:DefineAmount(values, nil) | Like}
-}
-
-func {{index .FieldToColumn 0 | Title}}NotLike(values ...{{.IsNullable}}{{.TypeName}}) LolCondition {
-	return &{{index .FieldToColumn 0 | ToLower}}{{Title .StructName}}{values:values, operation:DefineAmount(values, nil) | Not | Like}
-}
-{{else}}
+{{if .Likable}}
 func {{index .FieldToColumn 0 | Title}}Like(v0 {{.TypeName}}, vnext ...{{.TypeName}}) LolCondition {
 	return &{{index .FieldToColumn 0 | ToLower}}{{Title .StructName}}{values:append([]{{.TypeName}}{v0}, vnext...), operation:DefineAmount(v0, vnext) | Like}
 }
@@ -378,5 +371,5 @@ func {{index .FieldToColumn 0 | Title}}Like(v0 {{.TypeName}}, vnext ...{{.TypeNa
 func {{index .FieldToColumn 0 | Title}}NotLike(v0 {{.TypeName}}, vnext ...{{.TypeName}}) LolCondition {
 	return &{{index .FieldToColumn 0 | ToLower}}{{Title .StructName}}{values:append([]{{.TypeName}}{v0}, vnext...), operation:DefineAmount(v0, vnext) | Not | Like}
 }
-{{end}}{{end}}
+{{end}}
 `)
