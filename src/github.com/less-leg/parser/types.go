@@ -29,7 +29,7 @@ var SupportedBasicTypes = map[string]NullableValueMeta{
 
 	"string": {NullableValueType:"sql.NullString", NullableValueHolder:"String"},
 
-	"time.Time": {NullableValueType:"NullTime", NullableValueHolder:"Time"},
+	"time.Time": {NullableValueType:"types.NullTime", NullableValueHolder:"Time"},
 
 	"bool": {NullableValueType:"sql.NullBool", NullableValueHolder:"Bool"},
 }

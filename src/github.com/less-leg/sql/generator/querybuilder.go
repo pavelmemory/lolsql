@@ -22,14 +22,12 @@ func Generate(pckgDef *parser.PackageDefinition) {
 			Package.ExecuteTemplate(entityFile, "", structNameLowCase)
 
 			Imports.ExecuteTemplate(entityFile, "", append([]string{
-				`. "github.com/less-leg/types"`,
+				`"github.com/less-leg/types"`,
 				`"strings"`,
 				`"database/sql"`,
 				`"fmt"`,
 				`"github.com/less-leg/utils"`},
 				utils.DoubleQuotes(append([]string{pckgDef.ModelPackage}, sdef.Selectors(pckgDef.ModelPackageName())...)...)...))
-
-			Column_interface.ExecuteTemplate(entityFile, "", nil)
 
 			Scanner_struct.ExecuteTemplate(entityFile, "", struct {
 				Package string
@@ -60,10 +58,6 @@ func Generate(pckgDef *parser.PackageDefinition) {
 				Package:pckgDef.ModelPackageName(),
 				StructName:sdef.Name(),
 			})
-
-			LolConditionAnd_struct.ExecuteTemplate(entityFile, "", nil)
-
-			LolConditionOr_struct.ExecuteTemplate(entityFile, "", nil)
 
 			ColumnStub_struct.ExecuteTemplate(entityFile, "", pckgDef.FieldsToColumns(structName))
 

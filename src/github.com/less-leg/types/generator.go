@@ -3,112 +3,162 @@ package types
 import (
 	"github.com/less-leg/utils"
 	"strings"
-	"strconv"
-	"time"
 	"reflect"
 )
 
-type SelectColumn interface {
+type Columner interface {
 	Column() string
 }
 
+type Fielder interface {
+	Field() string
+}
+
+type FielderColumner interface {
+	Fielder
+	Columner
+}
+
 type LolCondition interface {
-	SelectColumn
+	Columner
 	Render() string
 	And(LolCondition) LolCondition
 	Or(LolCondition) LolCondition
 	Next() LolCondition
 	SetNext(LolCondition)
+	Parameters() []interface{}
 }
 
-type LolConditionString interface {
-	LolCondition
-	Values() []string
+func NewLolCondition(columner Columner, values []interface{}, operation ConditionConstant) LolCondition {
+	return &LolConditionBase{
+		Columner: columner,
+		values: values,
+		operation: operation,
+	}
 }
 
-type LolConditionStringPtr interface {
-	LolCondition
-	Values() []*string
+type LolConditionBase struct {
+	Columner
+	HasNext
+	values   []interface{}
+	operation ConditionConstant
 }
 
-type LolConditionInt interface {
-	LolCondition
-	Values() []int
+func (this *LolConditionBase) Parameters() []interface{} {
+	if this.Next() != nil {
+		return append(this.values, this.Next().Parameters()...)
+	}
+	return this.values
 }
 
-type LolConditionIntPtr interface {
-	LolCondition
-	Values() []*int
+func (this *LolConditionBase) render() string {
+	if conditionSign, found := ConditionSignMap[this.operation]; found {
+		return conditionSign(this.Column(), this.values)
+	}
+	panic("Not supported operation for: int")
 }
 
-type LolConditionInt8 interface {
-	LolCondition
-	Values() []int8
+
+func (this *LolConditionBase) Render() string {
+	if this.Next() != nil {
+		return this.render() + " " + this.Next().Render()
+	}
+	return this.render()
 }
 
-type LolConditionInt8Ptr interface {
-	LolCondition
-	Values() []*int8
+
+func (this *LolConditionBase) And(cond LolCondition) LolCondition {
+	this.SetNext(&LolConditionAnd{LolCondition:cond})
+	return this
 }
 
-type LolConditionInt16 interface {
-	LolCondition
-	Values() []int16
+func (this *LolConditionBase) Or(cond LolCondition) LolCondition {
+	this.SetNext(&LolConditionAnd{LolCondition:cond})
+	return this
 }
 
-type LolConditionInt16Ptr interface {
+type LolConditionAnd struct {
+	HasNext
 	LolCondition
-	Values() []*int16
 }
 
-type LolConditionInt32 interface {
-	LolCondition
-	Values() []int32
+func (this *LolConditionAnd) render() string {
+	return "and (" + this.LolCondition.Render() + ")"
 }
 
-type LolConditionInt32Ptr interface {
-	LolCondition
-	Values() []*int32
+func (this *LolConditionAnd) Render() string {
+	if this.Next() != nil {
+		return this.render() + " " + this.Next().Render()
+	}
+	return this.render()
 }
 
-type LolConditionInt64 interface {
-	LolCondition
-	Values() []int64
+func (this *LolConditionAnd) And(cond LolCondition) LolCondition {
+	this.SetNext(&LolConditionAnd{LolCondition:cond})
+	return this
 }
 
-type LolConditionInt64Ptr interface {
-	LolCondition
-	Values() []*int64
+func (this *LolConditionAnd) Or(cond LolCondition) LolCondition {
+	this.SetNext(&LolConditionOr{LolCondition:cond})
+	return this
 }
 
-type LolConditionFloat32 interface {
-	LolCondition
-	Values() []float32
+func (this *LolConditionAnd) Next() LolCondition {
+	return this.HasNext.Next()
 }
 
-type LolConditionFloat32Ptr interface {
-	LolCondition
-	Values() []*float32
+func (this *LolConditionAnd) SetNext(n LolCondition) {
+	this.HasNext.SetNext(n)
 }
 
-type LolConditionFloat64 interface {
-	LolCondition
-	Values() []float64
+func (this *LolConditionAnd) Parameters() []interface{} {
+	if this.Next() != nil {
+		return append(this.LolCondition.Parameters(), this.Next().Parameters()...)
+	} else {
+		return this.LolCondition.Parameters()
+	}
 }
 
-type LolConditionFloat64Ptr interface {
+type LolConditionOr struct {
+	HasNext
 	LolCondition
-	Values() []*float64
 }
 
-type LolConditionTime interface {
-	LolCondition
-	Values() []time.Time
+func (this *LolConditionOr) render() string {
+	return "or (" + this.LolCondition.Render() + ")"
 }
 
-type LolConditionTimePtr interface {
-	LolCondition
-	Values() []*time.Time
+func (this *LolConditionOr) Render() string {
+	if this.Next() != nil {
+		return this.render() + " " + this.Next().Render()
+	}
+	return this.render()
+}
+
+func (this *LolConditionOr) And(cond LolCondition) LolCondition {
+	this.SetNext(&LolConditionAnd{LolCondition:cond})
+	return this
+}
+
+func (this *LolConditionOr) Or(cond LolCondition) LolCondition {
+	this.SetNext(&LolConditionOr{LolCondition:cond})
+	return this
+}
+
+func (this *LolConditionOr) Next() LolCondition {
+	return this.HasNext.Next()
+}
+
+func (this *LolConditionOr) SetNext(n LolCondition) {
+	this.HasNext.SetNext(n)
+}
+
+func (this *LolConditionOr) Parameters()[]interface{} {
+	if this.Next() != nil {
+		return append(this.LolCondition.Parameters(), this.Next().Parameters()...)
+	} else {
+		return this.LolCondition.Parameters()
+	}
 }
 
 type HasNext struct {
@@ -146,6 +196,14 @@ const (
 	Equals
 )
 
+func DefineConditionsAmount(count int) ConditionConstant {
+	switch count {
+	case 0:  return Null
+	case 1:  return Single
+	default: return Multi
+	}
+}
+
 func DefineAmount(v1 interface{}, vnext interface{}) ConditionConstant {
 	value1 := reflect.ValueOf(v1)
 	switch value1.Kind() {
@@ -169,176 +227,6 @@ func DefineAmount(v1 interface{}, vnext interface{}) ConditionConstant {
 			return Multi
 		}
 	}
-}
-
-func renderEqualsNull(condition interface{}) string {
-	return condition.(SelectColumn).Column() + " is null"
-}
-
-func renderEqualsNotNull(condition interface{}) string {
-	return condition.(SelectColumn).Column() + " is not null"
-}
-
-func renderEquals(condition interface{}) string {
-	return renderSingle(condition, " = ")
-}
-
-func renderNotEquals(condition interface{}) string {
-	return renderSingle(condition, " <> ")
-}
-
-func renderLike(condition interface{}) string {
-	return renderSingle(condition, " like ")
-}
-
-func renderNotLike(condition interface{}) string {
-	return renderSingle(condition, " not like ")
-}
-
-func renderMultiEquals(condition interface{}) string {
-	return renderMulti(condition, " in ")
-}
-
-func renderMultiNotEquals(condition interface{}) string {
-	return renderMulti(condition, " not in ")
-}
-
-func renderSingle(condition interface{}, comparator string) string {
-	switch tcondition := condition.(type) {
-	case LolConditionString:
-		return tcondition.Column() + comparator + utils.Quote(tcondition.Values()[0])
-	case LolConditionStringPtr:
-		return tcondition.Column() + comparator + utils.Quote(*tcondition.Values()[0])
-
-	case LolConditionInt:
-		return tcondition.Column() + comparator + strconv.Itoa(tcondition.Values()[0])
-	case LolConditionIntPtr:
-		return tcondition.Column() + comparator + strconv.Itoa(*tcondition.Values()[0])
-	case LolConditionInt8:
-		return tcondition.Column() + comparator + strconv.FormatInt(int64(tcondition.Values()[0]), 10)
-	case LolConditionInt8Ptr:
-		return tcondition.Column() + comparator + strconv.FormatInt(int64(*tcondition.Values()[0]), 10)
-	case LolConditionInt16:
-		return tcondition.Column() + comparator + strconv.FormatInt(int64(tcondition.Values()[0]), 10)
-	case LolConditionInt16Ptr:
-		return tcondition.Column() + comparator + strconv.FormatInt(int64(*tcondition.Values()[0]), 10)
-	case LolConditionInt32:
-		return tcondition.Column() + comparator + strconv.FormatInt(int64(tcondition.Values()[0]), 10)
-	case LolConditionInt32Ptr:
-		return tcondition.Column() + comparator + strconv.FormatInt(int64(*tcondition.Values()[0]), 10)
-	case LolConditionInt64:
-		return tcondition.Column() + comparator + strconv.FormatInt(tcondition.Values()[0], 10)
-	case LolConditionInt64Ptr:
-		return tcondition.Column() + comparator + strconv.FormatInt(*tcondition.Values()[0], 10)
-
-	case LolConditionFloat32:
-		return tcondition.Column() + comparator + strconv.FormatFloat(float64(tcondition.Values()[0]), 'f', -1, 32)
-	case LolConditionFloat32Ptr:
-		return tcondition.Column() + comparator + strconv.FormatFloat(float64(*tcondition.Values()[0]), 'f', -1, 32)
-	case LolConditionFloat64:
-		return tcondition.Column() + comparator + strconv.FormatFloat(float64(tcondition.Values()[0]), 'f', -1, 64)
-	case LolConditionFloat64Ptr:
-		return tcondition.Column() + comparator + strconv.FormatFloat(float64(*tcondition.Values()[0]), 'f', -1, 64)
-
-	case LolConditionTime:
-		return tcondition.Column() + comparator + utils.Quote(tcondition.Values()[0].Format("2006-01-02 15:04:05"))
-	case LolConditionTimePtr:
-		return tcondition.Column() + comparator + utils.Quote((*tcondition.Values()[0]).Format("2006-01-02 15:04:05"))
-
-	default:
-		// TODO: Custom User types must provide mechanism to propagate them to sql query
-		panic("Not supported type")
-	}
-}
-
-func renderMulti(condition interface{}, comparator string) string {
-	switch tcondition := condition.(type) {
-	case LolConditionString:
-		return tcondition.Column() + comparator + "(" + strings.Join(utils.QuoteAll(tcondition.Values()...), ", ") + ")"
-	case LolConditionStringPtr:
-		return tcondition.Column() + comparator + "(" + strings.Join(utils.QuoteAllPtrs(tcondition.Values()...), ", ") + ")"
-
-	case LolConditionInt:
-		return tcondition.Column() + comparator + "(" + strings.Join(utils.IntToString(tcondition.Values()...), ", ") + ")"
-	case LolConditionIntPtr:
-		return tcondition.Column() + comparator + "(" + strings.Join(utils.IntPtrToString(tcondition.Values()...), ", ") + ")"
-	case LolConditionInt8:
-		return tcondition.Column() + comparator + "(" + strings.Join(utils.Int8ToString(tcondition.Values()...), ", ") + ")"
-	case LolConditionInt8Ptr:
-		return tcondition.Column() + comparator + "(" + strings.Join(utils.Int8PtrToString(tcondition.Values()...), ", ") + ")"
-	case LolConditionInt16:
-		return tcondition.Column() + comparator + "(" + strings.Join(utils.Int16ToString(tcondition.Values()...), ", ") + ")"
-	case LolConditionInt16Ptr:
-		return tcondition.Column() + comparator + "(" + strings.Join(utils.Int16PtrToString(tcondition.Values()...), ", ") + ")"
-	case LolConditionInt32:
-		return tcondition.Column() + comparator + "(" + strings.Join(utils.Int32ToString(tcondition.Values()...), ", ") + ")"
-	case LolConditionInt32Ptr:
-		return tcondition.Column() + comparator + "(" + strings.Join(utils.Int32PtrToString(tcondition.Values()...), ", ") + ")"
-	case LolConditionInt64:
-		return tcondition.Column() + comparator + "(" + strings.Join(utils.Int64ToString(tcondition.Values()...), ", ") + ")"
-	case LolConditionInt64Ptr:
-		return tcondition.Column() + comparator + "(" + strings.Join(utils.Int64PtrToString(tcondition.Values()...), ", ") + ")"
-
-	case LolConditionFloat32:
-		return tcondition.Column() + comparator + "(" + strings.Join(utils.Float32ToString(tcondition.Values()...), ", ") + ")"
-	case LolConditionFloat32Ptr:
-		return tcondition.Column() + comparator + "(" + strings.Join(utils.Float32PtrToString(tcondition.Values()...), ", ") + ")"
-	case LolConditionFloat64:
-		return tcondition.Column() + comparator + "(" + strings.Join(utils.Float64ToString(tcondition.Values()...), ", ") + ")"
-	case LolConditionFloat64Ptr:
-		return tcondition.Column() + comparator + "(" + strings.Join(utils.Float64PtrToString(tcondition.Values()...), ", ") + ")"
-
-	case LolConditionTime:
-		return tcondition.Column() + comparator + "(" + strings.Join(utils.QuoteAll(utils.TimeToString(tcondition.Values()...)...), ", ") + ")"
-	case LolConditionTimePtr:
-		return tcondition.Column() + comparator + "(" + strings.Join(utils.QuoteAll(utils.TimePtrToString(tcondition.Values()...)...), ", ") + ")"
-
-	default:
-		panic("Not supported type")
-	}
-}
-
-func renderLikeStrings(condition interface{}) string {
-	return renderMultiLike(condition, " like ", " or ")
-}
-
-func renderNotLikeStrings(condition interface{}) string {
-	return renderMultiLike(condition, " not like ", " and ")
-}
-
-func renderMultiLike(condition interface{}, comparator, logic string) string {
-	switch cstring := condition.(type) {
-	case LolConditionString:
-		vstr := make([]string, 0, len(cstring.Values()))
-		for _, vptr := range cstring.Values() {
-			vstr = append(vstr, cstring.Column() + comparator + utils.Quote(vptr))
-		}
-		return strings.Join(vstr, logic)
-	case LolConditionStringPtr:
-		vstr := make([]string, 0, len(cstring.Values()))
-		for _, vptr := range cstring.Values() {
-			if vptr != nil {
-				vstr = append(vstr, cstring.Column() + comparator + utils.Quote(*vptr))
-			}
-		}
-		return strings.Join(vstr, logic)
-	}
-	panic("Not supported type. Must be string or pointer to string")
-}
-
-var ConditionRenderingMap = map[ConditionConstant]func(interface{}) string{
-	Equals | Null: renderEqualsNull,
-	Equals | Not | Null: renderEqualsNotNull,
-	Equals | Single: renderEquals,
-	Not | Equals | Single: renderNotEquals,
-	Like | Single: renderLike,
-	Not | Like | Single: renderNotLike,
-
-	Equals | Multi: renderMultiEquals,
-	Not | Equals | Multi: renderMultiNotEquals,
-
-	Like | Multi: renderLikeStrings,
-	Not | Like | Multi: renderNotLikeStrings,
 }
 
 var ConditionSignMap = map[ConditionConstant]func(column string, values interface{}) string {
