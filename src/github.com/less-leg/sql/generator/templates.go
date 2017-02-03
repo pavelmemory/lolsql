@@ -51,18 +51,10 @@ func (this *scanner) InitPropagation(selects []types.FielderColumner) {
 		{{$package := .Package}}{{$structName := .StructName}}{{range .Fields}}
 		case "{{.FieldName}}":
 			h = &holder{
-				{{if .NullableValueType}}temporary:new({{.NullableValueType}}),
+				temporary:new({{.IsNullable}}{{.FieldType}}),
 				propagationFunc:func(entity *{{$package}}.{{$structName}}, tmp interface{}) {
-					f := tmp.(*{{.NullableValueType}})
-					if f.Valid {
-						v := {{.FieldType}}(f.{{.NullableValueHolder}})
-						entity.{{.FieldName}} = &v
-					}
-				},{{else}}
-				temporary:new({{.FieldType}}),
-				propagationFunc:func(entity *{{$package}}.{{$structName}}, tmp interface{}) {
-					entity.{{.FieldName}} = *(tmp.(*{{.FieldType}}))
-				},{{end}}
+					entity.{{.FieldName}} = *(tmp.(*{{.IsNullable}}{{.FieldType}}))
+				},
 			}
 		{{end}}
 		default:
@@ -235,7 +227,7 @@ var ConditionByField, _ = template.New("").Funcs(template.FuncMap{
 	"Title": strings.Title,
 	"ToLower": strings.ToLower,
 	"DotToUnderscore": utils.DotToUnderscore}).Parse(`
-func {{index .FieldToColumn 0 | Title}}Is(v0 {{.IsNullable}}{{.TypeName}}, vnext ...{{.IsNullable}}{{.TypeName}}) types.LolCondition {
+func {{index .FieldToColumn 0 | Title}}Is(v0 {{.TypeName}}, vnext ...{{.TypeName}}) types.LolCondition {
 	parameters := []interface{}{v0}
 	for _, n := range vnext {
 		parameters = append(parameters, n)
@@ -243,7 +235,7 @@ func {{index .FieldToColumn 0 | Title}}Is(v0 {{.IsNullable}}{{.TypeName}}, vnext
 	return types.NewLolCondition({{ToLower .Selector}}{{if .Selector}}_{{end}}{{index .FieldToColumn 0 | ToLower | DotToUnderscore}}StubConst, parameters, types.DefineConditionsAmount(1 + len(vnext)) | types.Equals)
 }
 
-func {{index .FieldToColumn 0 | Title}}IsNot(v0 {{.IsNullable}}{{.TypeName}}, vnext ...{{.IsNullable}}{{.TypeName}}) types.LolCondition {
+func {{index .FieldToColumn 0 | Title}}IsNot(v0 {{.TypeName}}, vnext ...{{.TypeName}}) types.LolCondition {
 	parameters := []interface{}{v0}
 	for _, n := range vnext {
 		parameters = append(parameters, n)

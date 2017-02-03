@@ -11,27 +11,27 @@ const (
 	TableName = "TableName"
 )
 
-var SupportedBasicTypes = map[string]NullableValueMeta{
-	"int": {NullableValueType:"sql.NullInt64", NullableValueHolder:"Int64"},
-	"int8": {NullableValueType:"sql.NullInt64", NullableValueHolder:"Int64"},
-	"int16": {NullableValueType:"sql.NullInt64", NullableValueHolder:"Int64"},
-	"int32": {NullableValueType:"sql.NullInt64", NullableValueHolder:"Int64"},
-	"int64": {NullableValueType:"sql.NullInt64", NullableValueHolder:"Int64"},
+var SupportedBasicTypes = map[string]bool{
+	"int": true,
+	"int8": true,
+	"int16": true,
+	"int32": true,
+	"int64": true,
 
-	"uint": {NullableValueType:"sql.NullInt64", NullableValueHolder:"Int64"},
-	"uint8": {NullableValueType:"sql.NullInt64", NullableValueHolder:"Int64"},
-	"uint16": {NullableValueType:"sql.NullInt64", NullableValueHolder:"Int64"},
-	"uint32": {NullableValueType:"sql.NullInt64", NullableValueHolder:"Int64"},
-	"uint64": {NullableValueType:"sql.NullInt64", NullableValueHolder:"Int64"},
+	"uint": true,
+	"uint8": true,
+	"uint16": true,
+	"uint32": true,
+	"uint64": true,
 
-	"float32": {NullableValueType:"sql.NullFloat64", NullableValueHolder:"Float64"},
-	"float64": {NullableValueType:"sql.NullFloat64", NullableValueHolder:"Float64"},
+	"float32": true,
+	"float64": true,
 
-	"string": {NullableValueType:"sql.NullString", NullableValueHolder:"String"},
+	"string": true,
 
-	"time.Time": {NullableValueType:"types.NullTime", NullableValueHolder:"Time"},
+	"time.Time": true,
 
-	"bool": {NullableValueType:"sql.NullBool", NullableValueHolder:"Bool"},
+	"bool": true,
 }
 
 type PackageDefinition struct {
@@ -256,7 +256,7 @@ func fieldTypeDefinition(expr ast.Expr, packageName string) *FieldTypeDefinition
 	case *ast.ArrayType:
 		return &FieldTypeDefinition{Slice:true, Underlying:fieldTypeDefinition(expt.Elt, packageName)}
 	case *ast.Ident:
-		if _, found := SupportedBasicTypes[expt.Name]; found {
+		if SupportedBasicTypes[expt.Name] {
 			return &FieldTypeDefinition{name:expt.Name, likable:expt.Name == "string"}
 		} else {
 			return &FieldTypeDefinition{selector:packageName, Underlying:&FieldTypeDefinition{name:expt.Name, likable:expt.Name == "string"}}
@@ -329,15 +329,10 @@ func (this *ComplexFieldDefinition) FieldType() *FieldTypeDefinition {
 	return this.fieldType
 }
 
-type NullableValueMeta struct {
-	NullableValueType string
-	NullableValueHolder string
-}
-
 type FetchMeta struct{
-	FieldName string
-	FieldType string
-	NullableValueMeta
+	FieldName  string
+	FieldType  string
+	IsNullable string
 }
 
 type StructDefinition interface {
@@ -521,14 +516,10 @@ func (this *FieldTypeDefinition) IsLikable() bool {
 }
 
 func (this *FieldTypeDefinition) FetchMeta() *FetchMeta {
-	fm := &FetchMeta{}
+	fm := &FetchMeta{FieldType: this.Name()}
 	if this.IsNullable() {
-		if fmHold, found := SupportedBasicTypes[this.Name()]; found {
-			fm.NullableValueType = fmHold.NullableValueType
-			fm.NullableValueHolder = fmHold.NullableValueHolder
-		}
+		fm.IsNullable = "*"
 	}
-	fm.FieldType = this.Name()
 	return fm
 }
 
@@ -547,8 +538,7 @@ func (this *FieldTypeDefinition) PtrSign() string {
 }
 
 func (this *FieldTypeDefinition) IsBasic() bool {
-	_, found := SupportedBasicTypes[this.Name()]
-	return found
+	return SupportedBasicTypes[this.Name()]
 }
 
 func (this *FieldTypeDefinition) String() string {

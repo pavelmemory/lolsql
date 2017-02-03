@@ -26,7 +26,7 @@ type DjangoAdminLog struct {
 	ChangeMessage string       `lolsql:"column[change_message]"`
 	ContentTypeId *int         `lolsql:"column[content_type_id]"`
 	UserId        int          `lolsql:"column[user_id]"`
-	AskPassword   Confirmation `lolsql:"column[CONFIRMATION]"`
+	AskPassword   *Confirmation        `lolsql:"column[CONFIRMATION]"`
 }
 
 var buffer = &bytes.Buffer{}
