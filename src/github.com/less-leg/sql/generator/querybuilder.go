@@ -1,11 +1,11 @@
 package generator
 
 import (
-	"strings"
-	"path/filepath"
+	"fmt"
 	"io"
 	"os"
-	"fmt"
+	"path/filepath"
+	"strings"
 
 	"github.com/less-leg/parser"
 	"github.com/less-leg/utils"
@@ -30,33 +30,33 @@ func Generate(pckgDef *parser.PackageDefinition) {
 				utils.DoubleQuotes(append([]string{pckgDef.ModelPackage}, sdef.Selectors(pckgDef.ModelPackageName())...)...)...))
 
 			Scanner_struct.ExecuteTemplate(entityFile, "", struct {
-				Package string
+				Package    string
 				StructName string
-				Fields []*parser.FetchMeta
+				Fields     []*parser.FetchMeta
 			}{
-				Package:pckgDef.ModelPackageName(),
-				StructName:sdef.Name(),
-				Fields: sdef.FetchMeta(),
+				Package:    pckgDef.ModelPackageName(),
+				StructName: sdef.Name(),
+				Fields:     sdef.FetchMeta(),
 			})
 
-			Lol_struct.ExecuteTemplate(entityFile, "", struct{
-				Package string
-				StructName string
-				TableNameToColumns[]string
+			Lol_struct.ExecuteTemplate(entityFile, "", struct {
+				Package            string
+				StructName         string
+				TableNameToColumns []string
 			}{
-				Package:pckgDef.ModelPackageName(),
-				StructName:sdef.Name(),
+				Package:            pckgDef.ModelPackageName(),
+				StructName:         sdef.Name(),
 				TableNameToColumns: []string{sdef.TableName, strings.Join(pckgDef.ColumnNames(structName), ", ")},
 			})
 
 			Select_func.ExecuteTemplate(entityFile, "", nil)
 
 			LolWhere_struct.ExecuteTemplate(entityFile, "", struct {
-				Package string
+				Package    string
 				StructName string
 			}{
-				Package:pckgDef.ModelPackageName(),
-				StructName:sdef.Name(),
+				Package:    pckgDef.ModelPackageName(),
+				StructName: sdef.Name(),
 			})
 
 			ColumnStub_struct.ExecuteTemplate(entityFile, "", pckgDef.FieldsToColumns(structName))
@@ -65,9 +65,9 @@ func Generate(pckgDef *parser.PackageDefinition) {
 			utils.PanicIf(entityFile.Close())
 
 		case *parser.EmbeddedStructDefinition:
-			//fmt.Printf("%#v\n", sdef)
+			fmt.Printf("EmbeddedStructDefinition: %#v\n", sdef)
 		case *parser.CustomUserTypeStructDefinition:
-			//fmt.Printf("%#v\n", sdef)
+			fmt.Printf("CustomUserTypeStructDefinition: %#v\n", sdef)
 		default:
 			panic("Unreachable code")
 		}
@@ -79,40 +79,41 @@ func generateFields(entityFile io.Writer, pckgDef *parser.PackageDefinition, sde
 		switch fdef := fdef.(type) {
 		case *parser.SimpleFieldDefinition:
 			ConditionByField.ExecuteTemplate(entityFile, "", struct {
-				TypeName string
-				StructName string
-				IsNullable string
+				TypeName      string
+				StructName    string
+				IsNullable    string
 				FieldToColumn []string
-				Likable bool
-				Selector string
+				Likable       bool
+				Selector      string
 			}{
-				TypeName:   fdef.FieldType().Name(),
-				StructName: sdef.Name(),
-				IsNullable: fdef.FieldType().PtrSign(),
+				TypeName:      fdef.FieldType().Name(),
+				StructName:    sdef.Name(),
+				IsNullable:    fdef.FieldType().PtrSign(),
 				FieldToColumn: []string{fdef.Name(), fdef.ColumnName},
-				Likable: fdef.FieldType().IsLikable(),
-				Selector: selector,
+				Likable:       fdef.FieldType().IsLikable(),
+				Selector:      selector,
 			})
 		case *parser.ComplexFieldDefinition:
 			if fdef.Embedded {
 				if embdStrtDef, found := pckgDef.StructDefinitions[fdef.Name()]; found {
+					fmt.Printf("Embedded field found: %#v\n", embdStrtDef)
 					generateFields(entityFile, pckgDef, embdStrtDef, fdef.Name())
 				}
 			} else {
 				ConditionByField.ExecuteTemplate(entityFile, "", struct {
-					TypeName string
-					StructName string
-					IsNullable string
+					TypeName      string
+					StructName    string
+					IsNullable    string
 					FieldToColumn []string
-					Likable bool
-					Selector string
+					Likable       bool
+					Selector      string
 				}{
-					TypeName:   fdef.FieldType().Name(),
-					StructName: sdef.Name(),
-					IsNullable: fdef.FieldType().PtrSign(),
+					TypeName:      fdef.FieldType().Name(),
+					StructName:    sdef.Name(),
+					IsNullable:    fdef.FieldType().PtrSign(),
 					FieldToColumn: []string{fdef.Name(), fdef.ColumnName},
-					Likable: fdef.FieldType().IsLikable(),
-					Selector: selector,
+					Likable:       fdef.FieldType().IsLikable(),
+					Selector:      selector,
 				})
 			}
 		}

@@ -225,6 +225,14 @@ func (this *ParsedStruct) FieldDefinitions(modelPackage string) ([]FieldDefiniti
 					Embedded:true,
 					fieldType:ftypedef,
 				})
+			} else {
+				fdef := &ComplexFieldDefinition{
+					name:ftypedef.RawName(),
+					Embedded:true,
+					fieldType:ftypedef,
+				}
+				fdefs = append(fdefs, fdef)
+				fmt.Printf("Gotcha! %s\n", ftypedef.String())
 			}
 		} else {
 			tconf := NewTagConfig(field)
@@ -564,6 +572,21 @@ func (this *FieldTypeDefinition) Name() string {
 		return this.Underlying.Name()
 	case this.selector != "":
 		return this.selector + "." + this.Underlying.Name()
+	case this.Underlying == nil:
+		return this.name
+	default:
+		panic("Unreachable code")
+	}
+}
+
+func (this *FieldTypeDefinition) RawName() string {
+	switch {
+	case this.Ptr:
+		return this.Underlying.Name()
+	case this.Slice:
+		return this.Underlying.Name()
+	case this.selector != "":
+		return this.Underlying.Name()
 	case this.Underlying == nil:
 		return this.name
 	default:

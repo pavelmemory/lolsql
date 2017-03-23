@@ -1,7 +1,7 @@
 package dbmodel
 
 type Person struct {
-	Id       int     `lolsql:"id[true]"`
+	Id int `lolsql:"id[true]"`
 	Name
 	Password *string `lolsql:"column[SECRET]"`
 }
@@ -11,7 +11,7 @@ func (_ *Person) TableName() string {
 }
 
 type Name struct {
-	FirstName  string  `lolsql:"column[FIRST_NAME]"`
-	//SecondName *string `lolsql:"column[SECOND_NAME]"`
+	First  string  `lolsql:"column[FIRST_NAME]"`
+	Second *string `lolsql:"column[SECOND_NAME]"`
 	//MiddleName *string `lolsql:"column[MIDDLE_NAME]"`
 }

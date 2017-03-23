@@ -11,7 +11,7 @@ var Package, _ = template.New("").Parse(`package {{.}}`)
 var Imports, _ = template.New("").Parse(`
 import (
 {{range .}}
-{{.}}
+	{{.}}
 {{end}}
 )
 
@@ -21,6 +21,7 @@ var invalidImportProtector = utils.InvalidImportProtection
 // Please do not modify it manually. All changes will be deleted after regeneration.
 `)
 
+// TODO: add error as return value where panic is used
 var Scanner_struct, _ = template.New("").Parse(`
 type holder struct {
 	temporary       interface{}
@@ -43,7 +44,7 @@ func (this *scanner) InitPropagation(selects []types.FielderColumner) {
 
 	for _, selectable := range selects {
 		if _, found := this.holders[selectable.Column()]; found {
-			panic("Incorrectly builded query string: Duplicate select field: " + selectable.Field())
+			panic("Incorrectly builded query string: Duplicated select field: " + selectable.Field())
 		}
 
 		var h *holder

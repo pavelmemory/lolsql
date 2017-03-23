@@ -3,7 +3,6 @@ package types
 import (
 	"github.com/less-leg/utils"
 	"strings"
-	"reflect"
 )
 
 type Columner interface {
@@ -201,31 +200,6 @@ func DefineConditionsAmount(count int) ConditionConstant {
 	case 0:  return Null
 	case 1:  return Single
 	default: return Multi
-	}
-}
-
-func DefineAmount(v1 interface{}, vnext interface{}) ConditionConstant {
-	value1 := reflect.ValueOf(v1)
-	switch value1.Kind() {
-	case reflect.Array, reflect.Slice:
-		if !reflect.ValueOf(vnext).IsValid() {
-			switch utils.Length(v1) {
-			case 0:
-				return Null
-			case 1:
-				return Single
-			default:
-				return Multi
-			}
-		} else {
-			panic("Incorrect usage of the method. Expected: DefineAmount(val, vals) | DefineAmount(vals, nil)")
-		}
-	default:
-		if utils.Length(vnext) + 1 == 1 {
-			return Single
-		} else {
-			return Multi
-		}
 	}
 }
 
