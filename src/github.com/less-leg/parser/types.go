@@ -282,7 +282,7 @@ type FieldDefinition interface {
 	fmt.Stringer
 	Name() string
 	FieldType() *FieldTypeDefinition
-	FetchMeta() *FetchMeta
+	FetchMeta(pckgDef *PackageDefinition) []*FetchMeta
 }
 
 type SimpleFieldDefinition struct {
@@ -292,10 +292,10 @@ type SimpleFieldDefinition struct {
 	fieldType  *FieldTypeDefinition
 }
 
-func (this *SimpleFieldDefinition) FetchMeta() *FetchMeta {
+func (this *SimpleFieldDefinition) FetchMeta(pckgDef *PackageDefinition) []*FetchMeta {
 	fm := this.fieldType.FetchMeta()
 	fm.FieldName = this.Name()
-	return fm
+	return []*FetchMeta{fm}
 }
 
 func (this *SimpleFieldDefinition) Name() string {
@@ -318,10 +318,25 @@ type ComplexFieldDefinition struct {
 	fieldType *FieldTypeDefinition
 }
 
-func (this *ComplexFieldDefinition) FetchMeta() *FetchMeta {
-	fm := this.fieldType.FetchMeta()
-	fm.FieldName = this.Name()
-	return fm
+func (this *ComplexFieldDefinition) FetchMeta(pckgDef *PackageDefinition) []*FetchMeta {
+	if this.Embedded {
+		var fms []*FetchMeta
+		fmt.Println("FetchMeta():", this.name, this.Embedded, this.ColumnName, this.fieldType)
+		if sd, found := pckgDef.StructDefinitions[this.Name()]; found {
+			for _, fdef := range sd.FieldDefinitions() {
+				metas := fdef.FetchMeta(pckgDef)
+				for i := 0; i < len(metas); i++ {
+					metas[i].FieldName = this.Name() + "." + metas[i].FieldName
+					fms = append(fms, metas[i])
+				}
+			}
+		}
+		return fms
+	} else {
+		fm := this.fieldType.FetchMeta()
+		fm.FieldName = this.Name()
+		return []*FetchMeta{fm}
+	}
 }
 
 func (this *ComplexFieldDefinition) Name() string {
@@ -356,10 +371,10 @@ type TableStructDefinition struct {
 	fieldDefinitions []FieldDefinition
 }
 
-func (this *TableStructDefinition) FetchMeta() []*FetchMeta {
+func (this *TableStructDefinition) FetchMeta(pckgDef *PackageDefinition) []*FetchMeta {
 	fmets := make([]*FetchMeta, 0 , len(this.FieldDefinitions()))
 	for _, fdef := range this.FieldDefinitions() {
-		fmets = append(fmets, fdef.FetchMeta())
+		fmets = append(fmets, fdef.FetchMeta(pckgDef)...)
 	}
 	return fmets
 }

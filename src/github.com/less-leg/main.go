@@ -16,7 +16,7 @@ import (
 )
 
 func main() {
-	generate := false
+	generate := true
 
 	if generate {
 		packageDir := "github.com/less-leg/dbmodel"
@@ -73,7 +73,7 @@ func main() {
 		//
 
 		//sqlRend := person.Select(person.Id(), person.Password()).
-		sqlRend := person.Select().
+		sqlRend := person.Select(person.Name_First()).
 			Where(person.IdIs(10).And(person.IdIs(10, 1000))).
 				Or(person.PasswordIsNotNull().And(person.PasswordLike("%10", "001_"))).
 				Or(person.FirstNotLike("Pavrl")).

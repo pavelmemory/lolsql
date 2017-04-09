@@ -36,7 +36,7 @@ func Generate(pckgDef *parser.PackageDefinition) {
 			}{
 				Package:    pckgDef.ModelPackageName(),
 				StructName: sdef.Name(),
-				Fields:     sdef.FetchMeta(),
+				Fields:     sdef.FetchMeta(pckgDef),
 			})
 
 			Lol_struct.ExecuteTemplate(entityFile, "", struct {
