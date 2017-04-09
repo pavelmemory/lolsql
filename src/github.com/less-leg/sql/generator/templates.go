@@ -196,12 +196,12 @@ func (this *lolWhere) Render() string {
 }
 
 func (this *lolWhere) And(cond types.LolCondition) *lolWhere {
-	this.next = append(this.next, &types.LolConditionAnd{LolCondition: cond})
+	this.next = append(this.next, types.NewAndCondition(cond))
 	return this
 }
 
 func (this *lolWhere) Or(cond types.LolCondition) *lolWhere {
-	this.next = append(this.next, &types.LolConditionOr{LolCondition: cond})
+	this.next = append(this.next, types.NewOrCondition(cond))
 	return this
 }
 `)

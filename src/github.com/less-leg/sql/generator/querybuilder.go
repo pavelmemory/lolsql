@@ -12,6 +12,7 @@ import (
 )
 
 func Generate(pckgDef *parser.PackageDefinition) {
+	utils.RecreateDirectory(pckgDef.PackageDirPath)
 	for structName, sdef := range pckgDef.StructDefinitions {
 		switch sdef := sdef.(type) {
 		case *parser.TableStructDefinition:
@@ -62,7 +63,7 @@ func Generate(pckgDef *parser.PackageDefinition) {
 			ColumnStub_struct.ExecuteTemplate(entityFile, "", pckgDef.FieldsToColumns(structName))
 
 			generateFields(entityFile, pckgDef, sdef, "")
-			utils.PanicIf(entityFile.Close())
+			utils.PanicIfNotNil(entityFile.Close())
 
 		case *parser.EmbeddedStructDefinition:
 			fmt.Printf("EmbeddedStructDefinition: %#v\n", sdef)

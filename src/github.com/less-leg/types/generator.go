@@ -3,6 +3,7 @@ package types
 import (
 	"github.com/less-leg/utils"
 	"strings"
+	"fmt"
 )
 
 type Columner interface {
@@ -29,128 +30,91 @@ type LolCondition interface {
 }
 
 func NewLolCondition(columner Columner, values []interface{}, operation ConditionConstant) LolCondition {
-	return &LolConditionBase{
+	return &RootLolCondition{
 		Columner:  columner,
 		values:    values,
 		operation: operation,
 	}
 }
 
-type LolConditionBase struct {
+type RootLolCondition struct {
 	Columner
 	HasNext
 	values    []interface{}
 	operation ConditionConstant
 }
 
-func (this *LolConditionBase) Parameters() []interface{} {
+func (this *RootLolCondition) Parameters() []interface{} {
 	if this.Next() != nil {
 		return append(this.values, this.Next().Parameters()...)
 	}
 	return this.values
 }
 
-func (this *LolConditionBase) render() string {
+func (this *RootLolCondition) render() string {
 	if conditionSign, found := ConditionSignMap[this.operation]; found {
 		return conditionSign(this.Column(), this.values)
 	}
-	panic("Not supported operation for: int")
+	panic(fmt.Sprintf("Not supported operation for: %d", this.operation))
 }
 
-func (this *LolConditionBase) Render() string {
+func (this *RootLolCondition) Render() string {
 	if this.Next() != nil {
 		return this.render() + " " + this.Next().Render()
 	}
 	return this.render()
 }
 
-func (this *LolConditionBase) And(cond LolCondition) LolCondition {
-	this.SetNext(&LolConditionAnd{LolCondition: cond})
+func (this *RootLolCondition) And(cond LolCondition) LolCondition {
+	this.SetNext(NewAndCondition(cond))
 	return this
 }
 
-func (this *LolConditionBase) Or(cond LolCondition) LolCondition {
-	this.SetNext(&LolConditionAnd{LolCondition: cond})
+func (this *RootLolCondition) Or(cond LolCondition) LolCondition {
+	this.SetNext(NewOrCondition(cond))
 	return this
 }
 
-type LolConditionAnd struct {
+func NewAndCondition(cond LolCondition) LolCondition {
+	return &LolConditionLogical{LolCondition: cond, logicalCondition: "and"}
+}
+
+func NewOrCondition(cond LolCondition) LolCondition {
+	return &LolConditionLogical{LolCondition: cond, logicalCondition: "or"}
+}
+
+type LolConditionLogical struct {
 	HasNext
 	LolCondition
+	logicalCondition string
 }
 
-func (this *LolConditionAnd) render() string {
-	return "and (" + this.LolCondition.Render() + ")"
-}
-
-func (this *LolConditionAnd) Render() string {
+func (this *LolConditionLogical) Render() string {
 	if this.Next() != nil {
-		return this.render() + " " + this.Next().Render()
+		return this.logicalCondition + " (" + this.LolCondition.Render() + ") " + this.Next().Render()
 	}
-	return this.render()
+	return this.logicalCondition + " (" + this.LolCondition.Render() + ")"
 }
 
-func (this *LolConditionAnd) And(cond LolCondition) LolCondition {
-	this.SetNext(&LolConditionAnd{LolCondition: cond})
+func (this *LolConditionLogical) And(cond LolCondition) LolCondition {
+	this.SetNext(NewAndCondition(cond))
 	return this
 }
 
-func (this *LolConditionAnd) Or(cond LolCondition) LolCondition {
-	this.SetNext(&LolConditionOr{LolCondition: cond})
+func (this *LolConditionLogical) Or(cond LolCondition) LolCondition {
+	this.SetNext(NewOrCondition(cond))
 	return this
 }
 
-func (this *LolConditionAnd) Next() LolCondition {
+func (this *LolConditionLogical) Next() LolCondition {
 	return this.HasNext.Next()
 }
 
-func (this *LolConditionAnd) SetNext(n LolCondition) {
+func (this *LolConditionLogical) SetNext(n LolCondition) {
 	this.HasNext.SetNext(n)
 }
 
-func (this *LolConditionAnd) Parameters() []interface{} {
-	if this.Next() != nil {
-		return append(this.LolCondition.Parameters(), this.Next().Parameters()...)
-	} else {
-		return this.LolCondition.Parameters()
-	}
-}
-
-type LolConditionOr struct {
-	HasNext
-	LolCondition
-}
-
-func (this *LolConditionOr) render() string {
-	return "or (" + this.LolCondition.Render() + ")"
-}
-
-func (this *LolConditionOr) Render() string {
-	if this.Next() != nil {
-		return this.render() + " " + this.Next().Render()
-	}
-	return this.render()
-}
-
-func (this *LolConditionOr) And(cond LolCondition) LolCondition {
-	this.SetNext(&LolConditionAnd{LolCondition: cond})
-	return this
-}
-
-func (this *LolConditionOr) Or(cond LolCondition) LolCondition {
-	this.SetNext(&LolConditionOr{LolCondition: cond})
-	return this
-}
-
-func (this *LolConditionOr) Next() LolCondition {
-	return this.HasNext.Next()
-}
-
-func (this *LolConditionOr) SetNext(n LolCondition) {
-	this.HasNext.SetNext(n)
-}
-
-func (this *LolConditionOr) Parameters() []interface{} {
+func (this *LolConditionLogical) Parameters() []interface{} {
 	if this.Next() != nil {
 		return append(this.LolCondition.Parameters(), this.Next().Parameters()...)
 	} else {
@@ -183,6 +147,7 @@ func (this *HasNext) SetNext(cond LolCondition) {
 type ConditionConstant int
 
 const (
+	// TODO: Should be extended with sql operators: BETWEEN, <, >, >=, <=
 	None = ConditionConstant(0)
 	_    = ConditionConstant(1 << (2 * iota))
 	Null
@@ -205,6 +170,7 @@ func DefineConditionsAmount(count int) ConditionConstant {
 }
 
 var ConditionSignMap = map[ConditionConstant]func(column string, values interface{}) string{
+	// TODO: This map should be extended with sql operators: BETWEEN, <, >, >=, <=
 	Equals | Null:       func(column string, values interface{}) string { return column + " is null" },
 	Equals | Not | Null: func(column string, values interface{}) string { return column + " is not null" },
 

@@ -4,33 +4,36 @@ import (
 	_ "github.com/go-sql-driver/mysql"
 
 	"path/filepath"
+	"database/sql"
+	"log"
+	"os"
 
+	"github.com/less-leg/utils"
 	"github.com/less-leg/parser"
 	"github.com/less-leg/sql/generator"
-	"github.com/less-leg/utils"
-
-	//"database/sql"
-	"database/sql"
+	//"github.com/less-leg/dbmodel/lolsql/person"
 	"github.com/less-leg/dbmodel/lolsql/person"
-	"log"
 )
 
 func main() {
 	generate := false
 
 	if generate {
-		packageDir := "github.com/less-leg/dbmodel"
-		sourceDir := "D:/workspace/GoProjects/lolsql/src"
+		packageDir := "github.com/less-leg/dbmodel" // TODO: it is must be an input argument
+		sourceDir := os.Getenv("GOPATH")
+		if sourceDir == "" {
+			log.Fatalln("OS env var GOPATH is not defined")
+		}
+		sourceDir = filepath.Join(sourceDir, "src")
 		parsedStructs := parser.Parse(packageDir, sourceDir)
 
-		log.Println("PARSED")
-		for _, parsedStruct := range parsedStructs {
-			log.Printf("%#v\n", parsedStruct)
-		}
+		//log.Println("PARSED")
+		//for _, parsedStruct := range parsedStructs {
+		//	log.Printf("%#v\n", parsedStruct)
+		//}
 
-		log.Println("DEFINITIONS")
-		lolDirPath := utils.RecreateDirectory(filepath.Join(sourceDir, packageDir, "lolsql"))
-		pckgDef := parser.NewPackageDefinition(packageDir, lolDirPath, parsedStructs)
+		//log.Println("DEFINITIONS")
+		pckgDef := parser.NewPackageDefinition(packageDir, filepath.Join(sourceDir, packageDir, "lolsql"), parsedStructs)
 		for _, strDef := range pckgDef.StructDefinitions {
 			log.Printf("%#v\n", strDef)
 		}
@@ -54,7 +57,7 @@ func main() {
 		//log.Println(handsome.Select().Where(handsome.DateOfBirthIsNot(&now)).Or(handsome.SalaryIs(10.2, 100.2)).And(handsome.LoginNotLike("LoginNotLike", "LoginNotLike2")).Render())
 
 		db, err := sql.Open("mysql", "root:root@/Development?parseTime=true")
-		utils.PanicIf(err)
+		utils.PanicIfNotNil(err)
 		defer db.Close()
 		////
 		//dals, err := djangoadminlog.Select().Where(djangoadminlog.ObjectReprLike("Harry%", "Lol%").And(djangoadminlog.ActionFlagIs(1)).And(djangoadminlog.ActionFlagIs(1))).Fetch(db)
@@ -81,11 +84,13 @@ func main() {
 		//	Render()
 		//log.Println(sqlRend)
 
+		// select Id, FIRST_NAME, SECOND_NAME, SECRET from PERSONS where (Id = ?) or (Id = ?)
+		// select Id, FIRST_NAME, SECOND_NAME, SECRET from PERSONS where Id = ? and (Id = ?)
 		qb := person.Select().
-			Where(person.IdIs(1).Or(person.IdIs(3, 1000))).
+			Where(person.IdIs(1).Or(person.IdIs(2)))
 			//Or(person.PasswordIsNotNull().And(person.PasswordLike("%10", "001_"))).
 			//Or(person.FirstNotLike("Pavrl")).
-			Or(person.SecondIsNull())
+			//Or(person.SecondIsNull())
 		log.Println(qb.Render())
 		persons, err := qb.Fetch(db)
 		if err != nil {

@@ -10,7 +10,7 @@ import (
 
 func Parse(packageName string, sourceDir string) []*ParsedStruct {
 	pckg, err := build.Import(packageName, sourceDir, build.IgnoreVendor)
-	utils.PanicIf(err)
+	utils.PanicIfNotNil(err)
 
 	var decls []ast.Decl
 	for _, goFile := range pckg.GoFiles {
@@ -64,6 +64,6 @@ func addMethod(expr ast.Expr, decl *ast.FuncDecl, methods map[string]map[string]
 
 func parseFile(path string) []ast.Decl {
 	tree, err := parser.ParseFile(token.NewFileSet(), path, nil, parser.AllErrors)
-	utils.PanicIf(err)
+	utils.PanicIfNotNil(err)
 	return tree.Decls
 }
