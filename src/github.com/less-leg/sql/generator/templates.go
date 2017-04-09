@@ -208,8 +208,8 @@ func (this *lolWhere) Or(cond types.LolCondition) *lolWhere {
 
 var ColumnStub_struct, _ = template.New("").Funcs(
 	template.FuncMap{
-		"Title": strings.Title,
-		"ToLower": strings.ToLower,
+		"Title":           strings.Title,
+		"ToLower":         strings.ToLower,
 		"DotToUnderscore": utils.DotToUnderscore}).Parse(`
 {{range .}}
 type {{index . 0 | ToLower | DotToUnderscore}}Stub struct {}
@@ -225,8 +225,8 @@ var SelectAllColumns = []types.FielderColumner{
 `)
 
 var ConditionByField, _ = template.New("").Funcs(template.FuncMap{
-	"Title": strings.Title,
-	"ToLower": strings.ToLower,
+	"Title":           strings.Title,
+	"ToLower":         strings.ToLower,
 	"DotToUnderscore": utils.DotToUnderscore}).Parse(`
 func {{index .FieldToColumn 0 | Title}}Is(v0 {{.TypeName}}, vnext ...{{.TypeName}}) types.LolCondition {
 	parameters := []interface{}{v0}

@@ -5,13 +5,13 @@ import (
 
 	"path/filepath"
 
-	"github.com/less-leg/utils"
 	"github.com/less-leg/parser"
 	"github.com/less-leg/sql/generator"
+	"github.com/less-leg/utils"
 
 	//"database/sql"
-	"github.com/less-leg/dbmodel/lolsql/person"
 	"database/sql"
+	"github.com/less-leg/dbmodel/lolsql/person"
 	"log"
 )
 
@@ -81,19 +81,19 @@ func main() {
 		//	Render()
 		//log.Println(sqlRend)
 
-		persons, err := person.Select().
-			//Where(person.IdIs(10).And(person.IdIs(10, 1000))).
+		qb := person.Select().
+			Where(person.IdIs(1).Or(person.IdIs(3, 1000))).
 			//Or(person.PasswordIsNotNull().And(person.PasswordLike("%10", "001_"))).
 			//Or(person.FirstNotLike("Pavrl")).
-			//Or(person.SecondIsNull()).
-			Fetch(db)
+			Or(person.SecondIsNull())
+		log.Println(qb.Render())
+		persons, err := qb.Fetch(db)
 		if err != nil {
 			log.Fatalln(err)
 		}
 		for _, per := range persons {
 			log.Println(per)
 		}
-
 
 		//ps, err := person.Select(person.Id(), person.Password()).
 		//	Where(person.IdIs(10).And(

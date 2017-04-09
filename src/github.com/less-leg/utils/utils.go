@@ -1,13 +1,13 @@
 package utils
 
 import (
-	"log"
-	"strings"
-	"strconv"
-	"time"
-	"reflect"
-	"os"
 	"fmt"
+	"log"
+	"os"
+	"reflect"
+	"strconv"
+	"strings"
+	"time"
 )
 
 var InvalidImportProtection = 0
@@ -64,41 +64,41 @@ func DoubleQuotes(strs ...string) []string {
 	return EncloseWith("\"", "\"", strs...)
 }
 
-func Suffix(suff string, strs...string) []string {
+func Suffix(suff string, strs ...string) []string {
 	modif := make([]string, 0, len(strs))
 	for _, str := range strs {
-		modif = append(modif, suff + str)
+		modif = append(modif, suff+str)
 	}
 	return modif
 }
 
-func Prefix(prefix string, strs...string) []string {
+func Prefix(prefix string, strs ...string) []string {
 	modif := make([]string, 0, len(strs))
 	for _, str := range strs {
-		modif = append(modif, str + prefix)
+		modif = append(modif, str+prefix)
 	}
 	return modif
 }
 
-func EncloseWith(suffix, prefix string, strs ... string) []string {
+func EncloseWith(suffix, prefix string, strs ...string) []string {
 	modif := make([]string, 0, len(strs))
 	for _, str := range strs {
-		modif = append(modif, suffix + str + prefix)
+		modif = append(modif, suffix+str+prefix)
 	}
 	return modif
 }
 
-func EncloseWithPtrs(suffix, prefix string, strs ... *string) []string {
+func EncloseWithPtrs(suffix, prefix string, strs ...*string) []string {
 	modif := make([]string, 0, len(strs))
 	for _, str := range strs {
 		if str != nil {
-			modif = append(modif, suffix + *str + prefix)
+			modif = append(modif, suffix+*str+prefix)
 		}
 	}
 	return modif
 }
 
-func ToStrings(vals interface{}) [] string {
+func ToStrings(vals interface{}) []string {
 	if value := reflect.ValueOf(vals); value.IsValid() {
 		var res []string
 		switch value.Kind() {
@@ -150,7 +150,7 @@ func valueToString(value reflect.Value) string {
 	panic("Not supported type for string creation: " + value.Kind().String())
 }
 
-func IntToString(ints ... int)[] string {
+func IntToString(ints ...int) []string {
 	istrs := make([]string, 0, len(ints))
 	for _, i := range ints {
 		istrs = append(istrs, strconv.Itoa(i))
@@ -158,7 +158,7 @@ func IntToString(ints ... int)[] string {
 	return istrs
 }
 
-func IntPtrToString(ints ... *int)[] string {
+func IntPtrToString(ints ...*int) []string {
 	istrs := make([]string, 0, len(ints))
 	for _, i := range ints {
 		if i != nil {
@@ -168,7 +168,7 @@ func IntPtrToString(ints ... *int)[] string {
 	return istrs
 }
 
-func Int8ToString(ints ... int8)[] string {
+func Int8ToString(ints ...int8) []string {
 	istrs := make([]string, 0, len(ints))
 	for _, i := range ints {
 		istrs = append(istrs, strconv.FormatInt(int64(i), 10))
@@ -176,7 +176,7 @@ func Int8ToString(ints ... int8)[] string {
 	return istrs
 }
 
-func Int8PtrToString(ints ... *int8)[] string {
+func Int8PtrToString(ints ...*int8) []string {
 	istrs := make([]string, 0, len(ints))
 	for _, i := range ints {
 		if i != nil {
@@ -186,7 +186,7 @@ func Int8PtrToString(ints ... *int8)[] string {
 	return istrs
 }
 
-func Int16ToString(ints ... int16)[] string {
+func Int16ToString(ints ...int16) []string {
 	istrs := make([]string, 0, len(ints))
 	for _, i := range ints {
 		istrs = append(istrs, strconv.FormatInt(int64(i), 10))
@@ -194,7 +194,7 @@ func Int16ToString(ints ... int16)[] string {
 	return istrs
 }
 
-func Int16PtrToString(ints ... *int16)[] string {
+func Int16PtrToString(ints ...*int16) []string {
 	istrs := make([]string, 0, len(ints))
 	for _, i := range ints {
 		if i != nil {
@@ -204,7 +204,7 @@ func Int16PtrToString(ints ... *int16)[] string {
 	return istrs
 }
 
-func Int32ToString(ints ... int32)[] string {
+func Int32ToString(ints ...int32) []string {
 	istrs := make([]string, 0, len(ints))
 	for _, i := range ints {
 		istrs = append(istrs, strconv.FormatInt(int64(i), 10))
@@ -212,7 +212,7 @@ func Int32ToString(ints ... int32)[] string {
 	return istrs
 }
 
-func Int32PtrToString(ints ... *int32)[] string {
+func Int32PtrToString(ints ...*int32) []string {
 	istrs := make([]string, 0, len(ints))
 	for _, i := range ints {
 		if i != nil {
@@ -222,7 +222,7 @@ func Int32PtrToString(ints ... *int32)[] string {
 	return istrs
 }
 
-func Int64ToString(ints ... int64)[] string {
+func Int64ToString(ints ...int64) []string {
 	istrs := make([]string, 0, len(ints))
 	for _, i := range ints {
 		istrs = append(istrs, strconv.FormatInt(i, 10))
@@ -230,7 +230,7 @@ func Int64ToString(ints ... int64)[] string {
 	return istrs
 }
 
-func Int64PtrToString(ints ... *int64)[] string {
+func Int64PtrToString(ints ...*int64) []string {
 	istrs := make([]string, 0, len(ints))
 	for _, i := range ints {
 		if i != nil {
@@ -240,7 +240,7 @@ func Int64PtrToString(ints ... *int64)[] string {
 	return istrs
 }
 
-func Float32ToString(ints ... float32)[] string {
+func Float32ToString(ints ...float32) []string {
 	istrs := make([]string, 0, len(ints))
 	for _, i := range ints {
 		istrs = append(istrs, strconv.FormatFloat(float64(i), 'f', -1, 32))
@@ -248,7 +248,7 @@ func Float32ToString(ints ... float32)[] string {
 	return istrs
 }
 
-func Float32PtrToString(ints ... *float32)[] string {
+func Float32PtrToString(ints ...*float32) []string {
 	istrs := make([]string, 0, len(ints))
 	for _, i := range ints {
 		if i != nil {
@@ -258,7 +258,7 @@ func Float32PtrToString(ints ... *float32)[] string {
 	return istrs
 }
 
-func Float64ToString(ints ... float64)[] string {
+func Float64ToString(ints ...float64) []string {
 	istrs := make([]string, 0, len(ints))
 	for _, i := range ints {
 		istrs = append(istrs, strconv.FormatFloat(i, 'f', -1, 64))
@@ -266,7 +266,7 @@ func Float64ToString(ints ... float64)[] string {
 	return istrs
 }
 
-func Float64PtrToString(ints ... *float64)[] string {
+func Float64PtrToString(ints ...*float64) []string {
 	istrs := make([]string, 0, len(ints))
 	for _, i := range ints {
 		if i != nil {
@@ -276,7 +276,7 @@ func Float64PtrToString(ints ... *float64)[] string {
 	return istrs
 }
 
-func TimeToString(ints ... time.Time)[] string {
+func TimeToString(ints ...time.Time) []string {
 	istrs := make([]string, 0, len(ints))
 	for _, i := range ints {
 		istrs = append(istrs, i.Format("2006-01-02 15:04:05"))
@@ -284,7 +284,7 @@ func TimeToString(ints ... time.Time)[] string {
 	return istrs
 }
 
-func TimePtrToString(ints ... *time.Time)[] string {
+func TimePtrToString(ints ...*time.Time) []string {
 	istrs := make([]string, 0, len(ints))
 	for _, i := range ints {
 		if i != nil {

@@ -1,10 +1,10 @@
 package parser
 
 import (
-	"go/ast"
-	"strings"
 	"fmt"
+	"go/ast"
 	"strconv"
+	"strings"
 )
 
 const (
@@ -12,14 +12,14 @@ const (
 )
 
 var SupportedBasicTypes = map[string]bool{
-	"int": true,
-	"int8": true,
+	"int":   true,
+	"int8":  true,
 	"int16": true,
 	"int32": true,
 	"int64": true,
 
-	"uint": true,
-	"uint8": true,
+	"uint":   true,
+	"uint8":  true,
 	"uint16": true,
 	"uint32": true,
 	"uint64": true,
@@ -35,8 +35,8 @@ var SupportedBasicTypes = map[string]bool{
 }
 
 type PackageDefinition struct {
-	ModelPackage string
-	PackageDirPath string
+	ModelPackage      string
+	PackageDirPath    string
 	StructDefinitions map[string]StructDefinition
 }
 
@@ -48,16 +48,16 @@ func NewPackageDefinition(modelPackage string, lolDirPath string, parsedStructs 
 	}
 
 	return &PackageDefinition{
-		ModelPackage: modelPackage,
-		PackageDirPath:lolDirPath,
-		StructDefinitions:structDefinitions,
+		ModelPackage:      modelPackage,
+		PackageDirPath:    lolDirPath,
+		StructDefinitions: structDefinitions,
 	}
 }
 
 func (this *PackageDefinition) ModelPackageName() string {
 	index := strings.LastIndex(this.ModelPackage, "/")
 	if index > -1 {
-		return this.ModelPackage[index + 1:]
+		return this.ModelPackage[index+1:]
 	}
 	return this.ModelPackage
 }
@@ -142,7 +142,7 @@ func (this *ParsedStruct) TableName() string {
 				if len(rstmnt.Results) == 1 {
 					if blit, ok := rstmnt.Results[0].(*ast.BasicLit); ok {
 						tableNameLiteral := blit.Value
-						return tableNameLiteral[1:len(tableNameLiteral) - 1]
+						return tableNameLiteral[1 : len(tableNameLiteral)-1]
 					}
 				}
 			}
@@ -154,8 +154,8 @@ func (this *ParsedStruct) TableName() string {
 func (this *ParsedStruct) ToStructDefinition(modelPackage string) StructDefinition {
 	if scanMethod, found := this.Methods["Scan"]; found {
 		return &CustomUserTypeStructDefinition{
-			name:this.Name,
-			scan:methodHasSignature(scanMethod, []string{"interface"}, []string{"error"}),
+			name:  this.Name,
+			scan:  methodHasSignature(scanMethod, []string{"interface"}, []string{"error"}),
 			value: methodHasSignature(this.Methods["Value"], nil, []string{"Value", "error"}),
 		}
 	}
@@ -163,22 +163,24 @@ func (this *ParsedStruct) ToStructDefinition(modelPackage string) StructDefiniti
 	fields, embeddable := this.FieldDefinitions(modelPackage)
 	if embeddable {
 		return &EmbeddedStructDefinition{
-			name:this.Name,
-			fieldDefinitions:fields,
+			name:             this.Name,
+			fieldDefinitions: fields,
 		}
 	} else {
 		tableName := this.TableName()
 		return &TableStructDefinition{
-			name:this.Name,
-			TableName:tableName,
-			fieldDefinitions:fields,
+			name:             this.Name,
+			TableName:        tableName,
+			fieldDefinitions: fields,
 		}
 	}
 }
 
 // TODO: this function doesn't take into account selectors for parameter types and return types
 func methodHasSignature(fdecl *ast.FuncDecl, paramTypeNames []string, returnTypeNames []string) bool {
-	if fdecl == nil { return false }
+	if fdecl == nil {
+		return false
+	}
 	return checkHasAll(fdecl.Type.Params, paramTypeNames) && checkHasAll(fdecl.Type.Results, returnTypeNames)
 }
 
@@ -214,22 +216,22 @@ func (this *ParsedStruct) FieldDefinitions(modelPackage string) ([]FieldDefiniti
 	}
 
 	embeddable := true
-	packageName := string(modelPackage[strings.LastIndex(modelPackage, "/") + 1:])
+	packageName := string(modelPackage[strings.LastIndex(modelPackage, "/")+1:])
 
 	for _, field := range this.Type.Fields.List {
 		ftypedef := fieldTypeDefinition(field.Type, packageName)
 		if len(field.Names) == 0 {
 			if ftypedef.IsBasic() {
 				fdefs = append(fdefs, &ComplexFieldDefinition{
-					name:ftypedef.Name(),
-					Embedded:true,
-					fieldType:ftypedef,
+					name:      ftypedef.Name(),
+					Embedded:  true,
+					fieldType: ftypedef,
 				})
 			} else {
 				fdef := &ComplexFieldDefinition{
-					name:ftypedef.RawName(),
-					Embedded:true,
-					fieldType:ftypedef,
+					name:      ftypedef.RawName(),
+					Embedded:  true,
+					fieldType: ftypedef,
 				}
 				fdefs = append(fdefs, fdef)
 				fmt.Printf("Gotcha! %s\n", ftypedef.String())
@@ -240,16 +242,16 @@ func (this *ParsedStruct) FieldDefinitions(modelPackage string) ([]FieldDefiniti
 			var fdef FieldDefinition
 			if ftypedef.IsBasic() {
 				fdef = &SimpleFieldDefinition{
-					name:field.Names[0].Name,
-					Primary:tconf.Primary,
-					ColumnName:tconf.ColumnName,
-					fieldType:ftypedef,
+					name:       field.Names[0].Name,
+					Primary:    tconf.Primary,
+					ColumnName: tconf.ColumnName,
+					fieldType:  ftypedef,
 				}
 			} else {
 				fdef = &ComplexFieldDefinition{
-					name:fieldName(field),
-					fieldType:ftypedef,
-					ColumnName:tconf.ColumnName,
+					name:       fieldName(field),
+					fieldType:  ftypedef,
+					ColumnName: tconf.ColumnName,
 					// TODO package name
 				}
 			}
@@ -262,17 +264,17 @@ func (this *ParsedStruct) FieldDefinitions(modelPackage string) ([]FieldDefiniti
 func fieldTypeDefinition(expr ast.Expr, packageName string) *FieldTypeDefinition {
 	switch expt := expr.(type) {
 	case *ast.ArrayType:
-		return &FieldTypeDefinition{Slice:true, Underlying:fieldTypeDefinition(expt.Elt, packageName)}
+		return &FieldTypeDefinition{Slice: true, Underlying: fieldTypeDefinition(expt.Elt, packageName)}
 	case *ast.Ident:
 		if SupportedBasicTypes[expt.Name] {
-			return &FieldTypeDefinition{name:expt.Name, likable:expt.Name == "string"}
+			return &FieldTypeDefinition{name: expt.Name, likable: expt.Name == "string"}
 		} else {
-			return &FieldTypeDefinition{selector:packageName, Underlying:&FieldTypeDefinition{name:expt.Name, likable:expt.Name == "string"}}
+			return &FieldTypeDefinition{selector: packageName, Underlying: &FieldTypeDefinition{name: expt.Name, likable: expt.Name == "string"}}
 		}
 	case *ast.SelectorExpr:
-		return &FieldTypeDefinition{selector:expt.X.(*ast.Ident).Name, Underlying:&FieldTypeDefinition{name:expt.Sel.Name}}
+		return &FieldTypeDefinition{selector: expt.X.(*ast.Ident).Name, Underlying: &FieldTypeDefinition{name: expt.Sel.Name}}
 	case *ast.StarExpr:
-		return &FieldTypeDefinition{Ptr:true, Underlying:fieldTypeDefinition(expt.X, packageName)}
+		return &FieldTypeDefinition{Ptr: true, Underlying: fieldTypeDefinition(expt.X, packageName)}
 	default:
 		panic(fmt.Sprintf("Not supported relation: %#v ", expr))
 	}
@@ -312,10 +314,10 @@ func (this *SimpleFieldDefinition) String() string {
 }
 
 type ComplexFieldDefinition struct {
-	name      string
+	name       string
 	ColumnName string
-	Embedded  bool
-	fieldType *FieldTypeDefinition
+	Embedded   bool
+	fieldType  *FieldTypeDefinition
 }
 
 func (this *ComplexFieldDefinition) FetchMeta(pckgDef *PackageDefinition) []*FetchMeta {
@@ -352,7 +354,7 @@ func (this *ComplexFieldDefinition) FieldType() *FieldTypeDefinition {
 	return this.fieldType
 }
 
-type FetchMeta struct{
+type FetchMeta struct {
 	FieldName  string
 	FieldType  string
 	IsNullable string
@@ -372,7 +374,7 @@ type TableStructDefinition struct {
 }
 
 func (this *TableStructDefinition) FetchMeta(pckgDef *PackageDefinition) []*FetchMeta {
-	fmets := make([]*FetchMeta, 0 , len(this.FieldDefinitions()))
+	fmets := make([]*FetchMeta, 0, len(this.FieldDefinitions()))
 	for _, fdef := range this.FieldDefinitions() {
 		fmets = append(fmets, fdef.FetchMeta(pckgDef)...)
 	}
@@ -478,8 +480,8 @@ type TagConfig struct {
 func NewTagConfig(field *ast.Field) *TagConfig {
 	tag := fieldTag(field)
 	return &TagConfig{
-		Primary: isPrimary(tag),
-		ColumnName:columnName(field, tag),
+		Primary:    isPrimary(tag),
+		ColumnName: columnName(field, tag),
 	}
 }
 
@@ -510,7 +512,7 @@ func columnName(field *ast.Field, tag string) string {
 		if colNameEnd < 1 {
 			panic("Columnt name must be at least 1 character long: " + tag)
 		}
-		colName = string(tag[colNameStart:colNameStart + colNameEnd])
+		colName = string(tag[colNameStart : colNameStart+colNameEnd])
 	}
 	return colName
 }

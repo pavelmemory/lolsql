@@ -1,11 +1,11 @@
 package parser
 
 import (
-	"go/build"
-	"go/token"
-	"go/parser"
-	"go/ast"
 	"github.com/less-leg/utils"
+	"go/ast"
+	"go/build"
+	"go/parser"
+	"go/token"
 )
 
 func Parse(packageName string, sourceDir string) []*ParsedStruct {
@@ -14,7 +14,7 @@ func Parse(packageName string, sourceDir string) []*ParsedStruct {
 
 	var decls []ast.Decl
 	for _, goFile := range pckg.GoFiles {
-		decls = append(decls, parseFile(pckg.Dir + "/" + goFile)...)
+		decls = append(decls, parseFile(pckg.Dir+"/"+goFile)...)
 	}
 
 	structs := map[string]*ast.StructType{}
@@ -46,7 +46,7 @@ func Parse(packageName string, sourceDir string) []*ParsedStruct {
 
 	var ps []*ParsedStruct
 	for structName, structType := range structs {
-		ps = append(ps, &ParsedStruct{Name:structName, Type:structType, Methods:methods[structName]})
+		ps = append(ps, &ParsedStruct{Name: structName, Type: structType, Methods: methods[structName]})
 	}
 	return ps
 }
@@ -54,7 +54,7 @@ func Parse(packageName string, sourceDir string) []*ParsedStruct {
 func addMethod(expr ast.Expr, decl *ast.FuncDecl, methods map[string]map[string]*ast.FuncDecl) {
 	if ident, ok := expr.(*ast.Ident); ok {
 		if ms, found := methods[ident.Name]; found {
-			ms[decl.Name.Name] = decl;
+			ms[decl.Name.Name] = decl
 		} else {
 			methods[ident.Name] = make(map[string]*ast.FuncDecl)
 			methods[ident.Name][decl.Name.Name] = decl

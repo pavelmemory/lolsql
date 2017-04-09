@@ -1,9 +1,9 @@
 package types
 
 import (
-	"time"
-	"fmt"
 	"database/sql/driver"
+	"fmt"
+	"time"
 )
 
 type CustomNullableUserType interface {
@@ -49,8 +49,8 @@ func (this *NullTime) Scan(src interface{}) (err error) {
 	return
 }
 
-var parselength = map[int]bool {
-	10:true, 19:true, 21:true, 22:true, 23:true, 24:true, 25:true, 26:true,  // up to "YYYY-MM-DD HH:MM:SS.MMMMMM"
+var parselength = map[int]bool{
+	10: true, 19: true, 21: true, 22: true, 23: true, 24: true, 25: true, 26: true, // up to "YYYY-MM-DD HH:MM:SS.MMMMMM"
 }
 
 func parseDateTime(str string, loc *time.Location) (time.Time, error) {

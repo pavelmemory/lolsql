@@ -1,8 +1,8 @@
 package dbmodel
 
 import (
-	"fmt"
 	"database/sql/driver"
+	"fmt"
 )
 
 type Confirmation string
@@ -34,7 +34,9 @@ func (this *Confirmation) Scan(src interface{}) (err error) {
 
 func (this Confirmation) Value() (driver.Value, error) {
 	switch this {
-	case Yes, No: return string(this), nil
-	default: return nil, fmt.Errorf("Cannot convert Confirmation object to valid dabatase representation: %s", this)
+	case Yes, No:
+		return string(this), nil
+	default:
+		return nil, fmt.Errorf("Cannot convert Confirmation object to valid dabatase representation: %s", this)
 	}
 }

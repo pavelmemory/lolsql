@@ -30,8 +30,8 @@ type LolCondition interface {
 
 func NewLolCondition(columner Columner, values []interface{}, operation ConditionConstant) LolCondition {
 	return &LolConditionBase{
-		Columner: columner,
-		values: values,
+		Columner:  columner,
+		values:    values,
 		operation: operation,
 	}
 }
@@ -39,7 +39,7 @@ func NewLolCondition(columner Columner, values []interface{}, operation Conditio
 type LolConditionBase struct {
 	Columner
 	HasNext
-	values   []interface{}
+	values    []interface{}
 	operation ConditionConstant
 }
 
@@ -57,7 +57,6 @@ func (this *LolConditionBase) render() string {
 	panic("Not supported operation for: int")
 }
 
-
 func (this *LolConditionBase) Render() string {
 	if this.Next() != nil {
 		return this.render() + " " + this.Next().Render()
@@ -65,14 +64,13 @@ func (this *LolConditionBase) Render() string {
 	return this.render()
 }
 
-
 func (this *LolConditionBase) And(cond LolCondition) LolCondition {
-	this.SetNext(&LolConditionAnd{LolCondition:cond})
+	this.SetNext(&LolConditionAnd{LolCondition: cond})
 	return this
 }
 
 func (this *LolConditionBase) Or(cond LolCondition) LolCondition {
-	this.SetNext(&LolConditionAnd{LolCondition:cond})
+	this.SetNext(&LolConditionAnd{LolCondition: cond})
 	return this
 }
 
@@ -93,12 +91,12 @@ func (this *LolConditionAnd) Render() string {
 }
 
 func (this *LolConditionAnd) And(cond LolCondition) LolCondition {
-	this.SetNext(&LolConditionAnd{LolCondition:cond})
+	this.SetNext(&LolConditionAnd{LolCondition: cond})
 	return this
 }
 
 func (this *LolConditionAnd) Or(cond LolCondition) LolCondition {
-	this.SetNext(&LolConditionOr{LolCondition:cond})
+	this.SetNext(&LolConditionOr{LolCondition: cond})
 	return this
 }
 
@@ -135,12 +133,12 @@ func (this *LolConditionOr) Render() string {
 }
 
 func (this *LolConditionOr) And(cond LolCondition) LolCondition {
-	this.SetNext(&LolConditionAnd{LolCondition:cond})
+	this.SetNext(&LolConditionAnd{LolCondition: cond})
 	return this
 }
 
 func (this *LolConditionOr) Or(cond LolCondition) LolCondition {
-	this.SetNext(&LolConditionOr{LolCondition:cond})
+	this.SetNext(&LolConditionOr{LolCondition: cond})
 	return this
 }
 
@@ -152,7 +150,7 @@ func (this *LolConditionOr) SetNext(n LolCondition) {
 	this.HasNext.SetNext(n)
 }
 
-func (this *LolConditionOr) Parameters()[]interface{} {
+func (this *LolConditionOr) Parameters() []interface{} {
 	if this.Next() != nil {
 		return append(this.LolCondition.Parameters(), this.Next().Parameters()...)
 	} else {
@@ -186,7 +184,7 @@ type ConditionConstant int
 
 const (
 	None = ConditionConstant(0)
-	_ = ConditionConstant(1 << (2 * iota))
+	_    = ConditionConstant(1 << (2 * iota))
 	Null
 	Single
 	Multi
@@ -197,25 +195,36 @@ const (
 
 func DefineConditionsAmount(count int) ConditionConstant {
 	switch count {
-	case 0:  return Null
-	case 1:  return Single
-	default: return Multi
+	case 0:
+		return Null
+	case 1:
+		return Single
+	default:
+		return Multi
 	}
 }
 
-var ConditionSignMap = map[ConditionConstant]func(column string, values interface{}) string {
-	Equals | Null: func(column string, values interface{}) string { return column + " is null" },
+var ConditionSignMap = map[ConditionConstant]func(column string, values interface{}) string{
+	Equals | Null:       func(column string, values interface{}) string { return column + " is null" },
 	Equals | Not | Null: func(column string, values interface{}) string { return column + " is not null" },
 
-	Equals | Single: func(column string, values interface{}) string { return column + " = ?" },
+	Equals | Single:       func(column string, values interface{}) string { return column + " = ?" },
 	Not | Equals | Single: func(column string, values interface{}) string { return column + " <> ?" },
 
-	Like | Single: func(column string, values interface{}) string { return column + " like ?" },
+	Like | Single:       func(column string, values interface{}) string { return column + " like ?" },
 	Not | Like | Single: func(column string, values interface{}) string { return column + " not like ?" },
 
-	Equals | Multi: func(column string, values interface{}) string { return column + " in(" + strings.Repeat("?,", utils.Length(values) - 1) + "?)"},
-	Not | Equals | Multi: func(column string, values interface{}) string { return column + " not in(" + strings.Repeat("?,", utils.Length(values) - 1) + "?)"},
+	Equals | Multi: func(column string, values interface{}) string {
+		return column + " in(" + strings.Repeat("?,", utils.Length(values)-1) + "?)"
+	},
+	Not | Equals | Multi: func(column string, values interface{}) string {
+		return column + " not in(" + strings.Repeat("?,", utils.Length(values)-1) + "?)"
+	},
 
-	Like | Multi: func(column string, values interface{}) string { return strings.Repeat(column + " like ? or ", utils.Length(values) - 1) + column + " like ?"},
-	Not | Like | Multi: func(column string, values interface{}) string { return strings.Repeat(column + " not like ? and ", utils.Length(values) - 1) + column + " not like ?"},
+	Like | Multi: func(column string, values interface{}) string {
+		return strings.Repeat(column+" like ? or ", utils.Length(values)-1) + column + " like ?"
+	},
+	Not | Like | Multi: func(column string, values interface{}) string {
+		return strings.Repeat(column+" not like ? and ", utils.Length(values)-1) + column + " not like ?"
+	},
 }
