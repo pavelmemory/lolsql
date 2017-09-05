@@ -8,9 +8,11 @@ import (
 	"go/token"
 )
 
-func Parse(packageName string, sourceDir string) []*ParsedStruct {
+func Parse(packageName string, sourceDir string) ([]*ParsedStruct, error) {
 	pckg, err := build.Import(packageName, sourceDir, build.IgnoreVendor)
-	utils.PanicIfNotNil(err)
+	if err != nil {
+		return nil, err
+	}
 
 	var decls []ast.Decl
 	for _, goFile := range pckg.GoFiles {
@@ -48,7 +50,7 @@ func Parse(packageName string, sourceDir string) []*ParsedStruct {
 	for structName, structType := range structs {
 		ps = append(ps, &ParsedStruct{Name: structName, Type: structType, Methods: methods[structName]})
 	}
-	return ps
+	return ps, nil
 }
 
 func addMethod(expr ast.Expr, decl *ast.FuncDecl, methods map[string]map[string]*ast.FuncDecl) {

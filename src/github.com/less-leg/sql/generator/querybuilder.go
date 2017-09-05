@@ -23,10 +23,11 @@ func Generate(pckgDef *parser.PackageDefinition) {
 			Package.ExecuteTemplate(entityFile, "", structNameLowCase)
 
 			Imports.ExecuteTemplate(entityFile, "", append([]string{
-				`"github.com/less-leg/types"`,
-				`"strings"`,
-				`"database/sql"`,
 				`"fmt"`,
+				`"strings"`,
+				`"errors"`,
+				`"database/sql"`,
+				`"github.com/less-leg/types"`,
 				`"github.com/less-leg/utils"`},
 				utils.DoubleQuotes(append([]string{pckgDef.ModelPackage}, sdef.Selectors(pckgDef.ModelPackageName())...)...)...))
 

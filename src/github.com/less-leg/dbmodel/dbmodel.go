@@ -6,7 +6,7 @@ import (
 
 type Person struct {
 	Id int `lolsql:"id[true]"`
-	Name
+	Name Name
 	Password *string `lolsql:"column[SECRET]"`
 }
 
@@ -35,3 +35,12 @@ func (n Name) String() string {
 	}
 	return fmt.Sprintf(`"Name":{"First":"%s","Second":"%s"}`, n.First, sec)
 }
+
+/*
+CREATE TABLE `Development`.`PERSONS` (
+  `id` INT NOT NULL,
+  `first_name` VARCHAR(45) NOT NULL,
+  `second_name` VARCHAR(45) NULL,
+  `secret` VARCHAR(45) NULL,
+  PRIMARY KEY (`id`));
+*/

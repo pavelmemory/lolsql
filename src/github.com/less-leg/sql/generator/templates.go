@@ -39,12 +39,12 @@ type scanner struct {
 	fieldNames []string
 }
 
-func (this *scanner) InitPropagation(selects []types.FielderColumner) {
+func (this *scanner) InitPropagation(selects []types.FielderColumner) error {
 	this.holders = make(map[string]*holder)
 
 	for _, selectable := range selects {
 		if _, found := this.holders[selectable.Column()]; found {
-			panic("Incorrectly builded query string: Duplicated select field: " + selectable.Field())
+			return errors.New("Query string was built incorrectly: Duplicated select field: " + selectable.Field())
 		}
 
 		var h *holder
@@ -59,12 +59,13 @@ func (this *scanner) InitPropagation(selects []types.FielderColumner) {
 			}
 		{{end}}
 		default:
-			panic(selectable.Field())
+			return errors.New("Unexpected field in select statement: " + selectable.Field())
 		}
 
 		this.holders[selectable.Field()] = h
 		this.fieldNames = append(this.fieldNames, selectable.Field())
 	}
+	return nil
 }
 
 func (this *scanner) temporaries() []interface{} {
@@ -128,7 +129,10 @@ type lol struct {
 }
 
 func (this *lol) Fetch(db *sql.DB) ([]*{{.Package}}.{{.StructName}}, error) {
-	this.scanner.InitPropagation(this.selectColumns)
+	err := this.scanner.InitPropagation(this.selectColumns)
+	if err != nil {
+		return nil, err
+	}
 	this.scanner.sql = this.Render()
 	return this.scanner.Scan(db)
 }
@@ -170,7 +174,10 @@ type lolWhere struct {
 }
 
 func (this *lolWhere) Fetch(db *sql.DB) ([]*{{.Package}}.{{.StructName}}, error) {
-	this.retrieval.scanner.InitPropagation(this.retrieval.selectColumns)
+	err := this.retrieval.scanner.InitPropagation(this.retrieval.selectColumns)
+	if err != nil {
+		return nil, err
+	}
 	this.retrieval.scanner.sql = this.Render()
 	this.retrieval.scanner.parameters = this.parameters()
 	return this.retrieval.scanner.Scan(db)

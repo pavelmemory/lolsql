@@ -3,29 +3,40 @@ package main
 import (
 	_ "github.com/go-sql-driver/mysql"
 
-	"path/filepath"
 	"database/sql"
+	"fmt"
 	"log"
 	"os"
+	"path/filepath"
+	"strings"
 
-	"github.com/less-leg/utils"
+	"github.com/less-leg/dbmodel/lolsql/person"
 	"github.com/less-leg/parser"
 	"github.com/less-leg/sql/generator"
-	//"github.com/less-leg/dbmodel/lolsql/person"
-	"github.com/less-leg/dbmodel/lolsql/person"
+	"github.com/less-leg/utils"
 )
 
 func main() {
-	generate := false
+	generate := true
 
 	if generate {
 		packageDir := "github.com/less-leg/dbmodel" // TODO: it is must be an input argument
-		sourceDir := os.Getenv("GOPATH")
-		if sourceDir == "" {
+		goPathValues := os.Getenv("GOPATH")
+		if goPathValues == "" {
 			log.Fatalln("OS env var GOPATH is not defined")
 		}
-		sourceDir = filepath.Join(sourceDir, "src")
-		parsedStructs := parser.Parse(packageDir, sourceDir)
+		paths := strings.Split(goPathValues, fmt.Sprint(os.PathListSeparator))
+
+		var parsedStructs []*parser.ParsedStruct
+		for _, path := range paths {
+			goPathValues = filepath.Join(path, "src")
+			parsed, err := parser.Parse(packageDir, goPathValues)
+			if err == nil {
+				parsedStructs = append(parsedStructs, parsed...)
+			} else {
+				log.Fatalln(err)
+			}
+		}
 
 		//log.Println("PARSED")
 		//for _, parsedStruct := range parsedStructs {
@@ -33,7 +44,7 @@ func main() {
 		//}
 
 		//log.Println("DEFINITIONS")
-		pckgDef := parser.NewPackageDefinition(packageDir, filepath.Join(sourceDir, packageDir, "lolsql"), parsedStructs)
+		pckgDef := parser.NewPackageDefinition(packageDir, filepath.Join(paths[0], packageDir, "lolsql"), parsedStructs)
 		for _, strDef := range pckgDef.StructDefinitions {
 			log.Printf("%#v\n", strDef)
 		}
