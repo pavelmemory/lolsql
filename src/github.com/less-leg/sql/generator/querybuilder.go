@@ -12,6 +12,7 @@ import (
 )
 
 func Generate(pckgDef *parser.PackageDefinition) {
+	fmt.Println("pckgDef.PackageDirPath:", pckgDef.PackageDirPath)
 	utils.RecreateDirectory(pckgDef.PackageDirPath)
 	for structName, sdef := range pckgDef.StructDefinitions {
 		switch sdef := sdef.(type) {

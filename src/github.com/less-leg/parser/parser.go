@@ -8,6 +8,7 @@ import (
 	"go/token"
 )
 
+
 func Parse(packageName string, sourceDir string) []*ParsedStruct {
 	pckg, err := build.Import(packageName, sourceDir, build.IgnoreVendor)
 	utils.PanicIfNotNil(err)

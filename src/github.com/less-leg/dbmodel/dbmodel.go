@@ -5,8 +5,8 @@ import (
 )
 
 type Person struct {
-	Id int `lolsql:"id[true]"`
-	Name
+	Id       int `lolsql:"id[true]"`
+	Name     *Name
 	Password *string `lolsql:"column[SECRET]"`
 }
 

@@ -171,7 +171,7 @@ func checkHasAll(fieldList *ast.FieldList, expectedTypeNames []string) bool {
 					//if ident, ok := selector.X.(*ast.Ident); ok {
 					//	if ident.Name == "driver" {
 					//		resultError := results.List[1]
-					//		if ident, ok := resultError.Type.(*ast.Ident); ok && ident.Name == "error" {
+					//		if ident, ok := resultError.UserDefinedType.(*ast.Ident); ok && ident.Name == "error" {
 					//
 					//		}
 					//	}
@@ -290,7 +290,7 @@ func (sfd *SimpleFieldDefinition) FieldType() *FieldTypeDefinition {
 }
 
 func (sfd *SimpleFieldDefinition) String() string {
-	return fmt.Sprintf("Field[%s] Column[%s] Primary[%s] Type[%s]",
+	return fmt.Sprintf("Field[%s] Column[%s] Primary[%s] UserDefinedType[%s]",
 		sfd.name, sfd.ColumnName, strconv.FormatBool(sfd.Primary), sfd.fieldType.String())
 }
 
@@ -327,7 +327,7 @@ func (cfd *ComplexFieldDefinition) Name() string {
 }
 
 func (cfd *ComplexFieldDefinition) String() string {
-	return fmt.Sprintf("Complex Field[%s] Type[%s] Embedded[%s]",
+	return fmt.Sprintf("Complex Field[%s] UserDefinedType[%s] Embedded[%s]",
 		cfd.name, cfd.fieldType.String(), strconv.FormatBool(cfd.Embedded))
 }
 

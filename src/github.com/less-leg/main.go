@@ -3,28 +3,21 @@ package main
 import (
 	_ "github.com/go-sql-driver/mysql"
 
-	"path/filepath"
 	"database/sql"
-	"log"
-	"os"
+	"path/filepath"
 
-	"github.com/less-leg/utils"
 	"github.com/less-leg/parser"
 	"github.com/less-leg/sql/generator"
-	//"github.com/less-leg/dbmodel/lolsql/person"
-	"github.com/less-leg/dbmodel/lolsql/person"
+	"github.com/less-leg/utils"
+	"fmt"
 )
 
 func main() {
-	generate := false
+	generate := true
 
 	if generate {
 		packageDir := "github.com/less-leg/dbmodel" // TODO: it is must be an input argument
-		sourceDir := os.Getenv("GOPATH")
-		if sourceDir == "" {
-			log.Fatalln("OS env var GOPATH is not defined")
-		}
-		sourceDir = filepath.Join(sourceDir, "src")
+		sourceDir := "D:/workspace/GoProjects/lolsql/src"
 		parsedStructs := parser.Parse(packageDir, sourceDir)
 
 		//log.Println("PARSED")
@@ -35,7 +28,7 @@ func main() {
 		//log.Println("DEFINITIONS")
 		pckgDef := parser.NewPackageDefinition(packageDir, filepath.Join(sourceDir, packageDir, "lolsql"), parsedStructs)
 		for _, strDef := range pckgDef.StructDefinitions {
-			log.Printf("%#v\n", strDef)
+			fmt.Printf("%#v\n", strDef)
 		}
 
 		generator.Generate(pckgDef)
@@ -86,19 +79,19 @@ func main() {
 
 		// select Id, FIRST_NAME, SECOND_NAME, SECRET from PERSONS where (Id = ?) or (Id = ?)
 		// select Id, FIRST_NAME, SECOND_NAME, SECRET from PERSONS where Id = ? and (Id = ?)
-		qb := person.Select().
-			Where(person.IdIs(1).Or(person.IdIs(2)))
-			//Or(person.PasswordIsNotNull().And(person.PasswordLike("%10", "001_"))).
-			//Or(person.FirstNotLike("Pavrl")).
-			//Or(person.SecondIsNull())
-		log.Println(qb.Render())
-		persons, err := qb.Fetch(db)
-		if err != nil {
-			log.Fatalln(err)
-		}
-		for _, per := range persons {
-			log.Println(per)
-		}
+		//qb := person.Select().
+		//	Where(person.IdIs(1).Or(person.IdIs(2)))
+		//	//Or(person.PasswordIsNotNull().And(person.PasswordLike("%10", "001_"))).
+		//	//Or(person.FirstNotLike("Pavrl")).
+		//	//Or(person.SecondIsNull())
+		//log.Println(qb.Render())
+		//persons, err := qb.Fetch(db)
+		//if err != nil {
+		//	log.Fatalln(err)
+		//}
+		//for _, per := range persons {
+		//	log.Println(per)
+		//}
 
 		//ps, err := person.Select(person.Id(), person.Password()).
 		//	Where(person.IdIs(10).And(
