@@ -18,6 +18,7 @@ type Field interface {
 	IsItSlice() bool
 	IsItReference() bool
 	IsItEmbedded() bool
+	GetTypeSpecifications() []TypeSpecification
 }
 
 type TypeSpecification string
@@ -28,14 +29,14 @@ const (
 )
 
 type UserDefinedTypeField struct {
-	Name        string
-	TypeName    string
-	Selector    string
-	Tag         string
-	IsSlice     bool
-	IsReference bool
-	IsEmbedded  bool
-	Order       []TypeSpecification
+	Name                      string
+	TypeName                  string
+	Selector                  string
+	Tag                       string
+	IsSlice                   bool
+	IsReference               bool
+	IsEmbedded                bool
+	OrderedTypeSpecifications []TypeSpecification
 }
 
 var _ Field = UserDefinedTypeField{}
@@ -66,6 +67,10 @@ func (ufield UserDefinedTypeField) IsItReference() bool {
 
 func (ufield UserDefinedTypeField) IsItEmbedded() bool {
 	return ufield.IsEmbedded
+}
+
+func (ufield UserDefinedTypeField) GetTypeSpecifications() []TypeSpecification {
+	return ufield.OrderedTypeSpecifications
 }
 
 type Type interface {
@@ -145,5 +150,5 @@ func (udefa UserDefinedAlias) IsItAlias() bool {
 
 type Import struct {
 	Alias string
-	Name  string
+	Path  string
 }

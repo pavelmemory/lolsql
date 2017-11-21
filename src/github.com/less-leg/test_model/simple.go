@@ -1,13 +1,17 @@
 package test_model
 
-import "time"
+import (
+	"github.com/less-leg/dbmodel"
+	"time"
+)
 
 type MyTime time.Time
 
 type User struct {
-	Name   string
-	Years  int
-	Father *User
+	Name    string
+	Father  *User
+	time.Time
+	TaxFree dbmodel.Confirmation
 }
 
 type (

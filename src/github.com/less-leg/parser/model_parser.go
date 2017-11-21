@@ -8,6 +8,7 @@ import (
 	"go/token"
 	"log"
 	"path/filepath"
+	"strings"
 )
 
 type Package struct {
@@ -24,6 +25,7 @@ func ReadPackageInfo(packageName string) (Package, error) {
 		err     error
 	)
 
+	// TODO: mostly wan't be in the GOPATH
 	for _, srcDir := range srcDirs {
 		pkgInfo, err = build.Default.Import(packageName, srcDir, build.IgnoreVendor)
 		if err != nil {
@@ -52,7 +54,7 @@ func ReadPackageInfo(packageName string) (Package, error) {
 						for _, spec := range tDecl.Specs {
 							switch tSpec := spec.(type) {
 							case *ast.TypeSpec:
-								buildTypeDeclaration(pkg, tSpec)
+								pkg.AddTypeDeclaration(tSpec)
 							default:
 								log.Printf("unhandled general declaration specification: %#v\n", spec)
 							}
@@ -63,13 +65,8 @@ func ReadPackageInfo(packageName string) (Package, error) {
 						log.Printf("unhandled const declaration: %#v\n", tDecl)
 					case token.IMPORT:
 						for _, spec := range tDecl.Specs {
-							switch tSpec := spec.(type) {
-							case *ast.ImportSpec:
-								imp := buildImportDeclaration(tSpec)
-								pkg.Imports[imp.Name] = imp
-							default:
-								log.Printf("unhandled general declaration specification: %#v\n", spec)
-							}
+							tSpec := spec.(*ast.ImportSpec)
+							pkg.AddImportDeclaration(tSpec)
 						}
 					default:
 						panic("unreachable code")
@@ -86,7 +83,7 @@ func ReadPackageInfo(packageName string) (Package, error) {
 	return pkg, err
 }
 
-func buildTypeDeclaration(pkg Package, typeSpec *ast.TypeSpec) {
+func (pkg *Package) AddTypeDeclaration(typeSpec *ast.TypeSpec) {
 	// TODO: may be useful
 	//typeSpec.Name.IsExported()
 
@@ -128,7 +125,7 @@ func buildTypeDeclaration(pkg Package, typeSpec *ast.TypeSpec) {
 				for _, spec := range genDecl.Specs {
 					switch spec.(*ast.TypeSpec).Type.(type) {
 					case *ast.StructType:
-						TypeFromStructType(pkg, typeSpec)
+						pkg.AddTypeFromStructType(typeSpec)
 					default:
 						panic("unhandled spec.(*ast.TypeSpec).Type.(type)")
 					}
@@ -144,13 +141,13 @@ func buildTypeDeclaration(pkg Package, typeSpec *ast.TypeSpec) {
 		type UserModel {Name string}
 	*/
 	case *ast.StructType:
-		TypeFromStructType(pkg, typeSpec)
+		pkg.AddTypeFromStructType(typeSpec)
 	default:
 		panic("unhandled typeSpec.UserDefinedType:" + fmt.Sprintf(" %#v\n", typeSpec))
 	}
 }
 
-func TypeFromStructType(pkg Package, typeSpec *ast.TypeSpec) {
+func (pkg *Package) AddTypeFromStructType(typeSpec *ast.TypeSpec) {
 	typeDecl := UserDefinedType{
 		TypeIdentity: TypeIdentity{Name: typeSpec.Name.Name, Package: pkg.Name},
 		Fields:       make(map[string]Field),
@@ -174,7 +171,7 @@ func FieldsFromField(fieldSpec *ast.Field) []Field {
 		/*
 			type D struct {string}
 		*/
-		field.Name = FieldNameFromType(fieldSpec.Type)
+		field.IsEmbedded = true
 		return []Field{field}
 	} else {
 		/*
@@ -187,31 +184,6 @@ func FieldsFromField(fieldSpec *ast.Field) []Field {
 		}
 		return fields
 	}
-}
-
-// returns name to access struct's field
-func FieldNameFromType(fieldType ast.Expr) string {
-	switch tFieldSpec := fieldType.(type) {
-	/*
-		type D struct {time.Time}
-	*/
-	case *ast.SelectorExpr:
-		return tFieldSpec.Sel.Name
-
-	/*
-		type D struct {string}
-	*/
-	case *ast.Ident:
-		return tFieldSpec.Name
-
-	/*
-		type D struct {*string}
-		type D struct {*time.Time}
-	*/
-	case *ast.StarExpr:
-		return FieldNameFromType(tFieldSpec.X)
-	}
-	panic("unreachable code in proper use")
 }
 
 // returns type's name of struct's field
@@ -227,12 +199,14 @@ ComplexDeclaration:
 			tFieldSpecX := tFieldSpec.X.(*ast.Ident)
 			fieldType.Name = tFieldSpec.Sel.Name
 			fieldType.Selector = tFieldSpecX.Name
+			fieldType.TypeName = tFieldSpec.Sel.Name
 
 		/*
 			type D struct {string}
 		*/
 		case *ast.Ident:
 			fieldType.Name = tFieldSpec.Name
+			fieldType.TypeName = tFieldSpec.Name
 
 		/*
 			type D struct {*string}
@@ -240,17 +214,17 @@ ComplexDeclaration:
 		*/
 		case *ast.StarExpr:
 			fieldType.IsReference = true
-			fieldType.Order = append(fieldType.Order, Reference)
+			fieldType.OrderedTypeSpecifications = append(fieldType.OrderedTypeSpecifications, Reference)
 			fieldTypeExpr = tFieldSpec.X
 			continue ComplexDeclaration
 
 		/*
-			type D struct {[]string}
+			type D struct {U []string}
 			type D struct {[]*time.Time}
 		*/
 		case *ast.ArrayType:
 			fieldType.IsSlice = true
-			fieldType.Order = append(fieldType.Order, Slice)
+			fieldType.OrderedTypeSpecifications = append(fieldType.OrderedTypeSpecifications, Slice)
 			fieldTypeExpr = tFieldSpec.Elt
 			continue ComplexDeclaration
 		}
@@ -259,15 +233,12 @@ ComplexDeclaration:
 	return fieldType
 }
 
-// returns true if it is a pointer type
-func IsPointerType(fieldType ast.Expr) bool {
-	switch fieldType.(type) {
-	case *ast.StarExpr:
-		return true
+func (pkg *Package) AddImportDeclaration(iSpec *ast.ImportSpec) {
+	imp := Import{Path: iSpec.Path.Value[1 : len(iSpec.Path.Value)-1]}
+	pathParts := strings.Split(imp.Path, "/")
+	imp.Alias = pathParts[len(pathParts)-1]
+	if iSpec.Name != nil {
+		imp.Alias = iSpec.Name.Name
 	}
-	return false
-}
-
-func buildImportDeclaration(iSpec *ast.ImportSpec) Import {
-	return Import{}
+	pkg.Imports[imp.Path] = imp
 }
