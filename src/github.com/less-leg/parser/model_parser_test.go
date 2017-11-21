@@ -40,9 +40,19 @@ func TestReadPackageInfo_UserDefinedType(t *testing.T) {
 		TypeIdentity: TypeIdentity{Name: "User", Package: "github.com/less-leg/test_model"},
 		Fields: map[string]Field{
 			"Name":    UserDefinedTypeField{Name: "Name", TypeName: "string"},
-			"Father":  UserDefinedTypeField{Name: "Father", TypeName: "User", IsReference: true, OrderedTypeSpecifications: []TypeSpecification{Reference}},
+			"Father":  UserDefinedTypeField{Name: "Father", TypeName: "User", IsReference: true, Tag: `json:"omitempty"`, OrderedTypeSpecifications: []TypeSpecification{Reference}},
 			"Time":    UserDefinedTypeField{Name: "Time", TypeName: "Time", Selector: "time", IsEmbedded: true},
 			"TaxFree": UserDefinedTypeField{Name: "TaxFree", TypeName: "Confirmation", Selector: "dbmodel"},
+		},
+	})
+
+	assertUserDefinedType(t, pkg, UserDefinedType{
+		TypeIdentity: TypeIdentity{Name: "Operation", Package: "github.com/less-leg/test_model"},
+		Fields: map[string]Field{
+			"Begin":   UserDefinedTypeField{Name: "Begin", TypeName: "Time", Selector: "time"},
+			"End":     UserDefinedTypeField{Name: "End", TypeName: "Time", Selector: "time"},
+			"User":    UserDefinedTypeField{Name: "User", TypeName: "User", IsEmbedded: true, IsReference: true, OrderedTypeSpecifications: []TypeSpecification{Reference}},
+			"Actions": UserDefinedTypeField{Name: "Actions", TypeName: "byte", IsSlice: true, IsReference: true, OrderedTypeSpecifications: []TypeSpecification{Slice, Reference}},
 		},
 	})
 }

@@ -52,12 +52,8 @@ func ReadPackageInfo(packageName string) (Package, error) {
 					switch tDecl.Tok {
 					case token.TYPE:
 						for _, spec := range tDecl.Specs {
-							switch tSpec := spec.(type) {
-							case *ast.TypeSpec:
-								pkg.AddTypeDeclaration(tSpec)
-							default:
-								log.Printf("unhandled general declaration specification: %#v\n", spec)
-							}
+							tSpec := spec.(*ast.TypeSpec)
+							pkg.AddTypeDeclaration(tSpec)
 						}
 					case token.VAR:
 						log.Printf("unhandled var declaration: %#v\n", tDecl)
@@ -165,8 +161,14 @@ func (pkg *Package) AddTypeFromStructType(typeSpec *ast.TypeSpec) {
 	}
 }
 
+/*
+	type N struct {M string `json:"omitempty"`}
+*/
 func FieldsFromField(fieldSpec *ast.Field) []Field {
 	field := FieldFromType(fieldSpec.Type)
+	if fieldSpec.Tag != nil {
+		field.Tag = fieldSpec.Tag.Value[1 : len(fieldSpec.Tag.Value)-1]
+	}
 	if len(fieldSpec.Names) == 0 {
 		/*
 			type D struct {string}

@@ -8,18 +8,11 @@ import (
 type MyTime time.Time
 
 type User struct {
-	Name    string
-	Father  *User
+	Name   string
+	Father *User `json:"omitempty"`
 	time.Time
 	TaxFree dbmodel.Confirmation
 }
-
-type (
-	Operation struct {
-		Begin, End time.Time
-		*User
-	}
-)
 
 var SomeVar string
 
