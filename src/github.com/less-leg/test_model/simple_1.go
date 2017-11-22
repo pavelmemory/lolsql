@@ -14,6 +14,14 @@ type User struct {
 	TaxFree dbmodel.Confirmation
 }
 
+type Order struct {
+	Id       int
+	Version  int
+	Customer *string
+	Owner    *User
+	TaxFree dbmodel.Confirmation
+}
+
 var SomeVar string
 
 const SomeConst = 0
