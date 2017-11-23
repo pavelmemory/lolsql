@@ -20,6 +20,7 @@ type Order struct {
 	Customer *string
 	Owner    *User
 	TaxFree dbmodel.Confirmation
+	Start    time.Time
 }
 
 var SomeVar string

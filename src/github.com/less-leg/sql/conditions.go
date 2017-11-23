@@ -1,6 +1,9 @@
 package sql
 
-import "time"
+import (
+	"time"
+	"github.com/less-leg/parser"
+)
 
 type Condition interface {
 	AppendValues([]interface{}) []interface{}
@@ -57,13 +60,14 @@ func (c MultiCondition) Or(condition Condition) Condition {
 }
 
 type SingleCondition struct {
-	Field
+	Type parser.TypeIdentity
+	Field string
 	ComparatorOperation
 	Values []interface{}
 }
 
-func MultiTimes(times ...time.Time) (vals []interface{}) {
-	for _, v := range times {
+func MultiTimeTime(Times ...time.Time) (vals []interface{}) {
+	for _, v := range Times {
 		vals = append(vals, v)
 	}
 	return
@@ -168,7 +172,7 @@ func MultiFloat64s(floats ...float64) (vals []interface{}) {
 }
 
 func (c SingleCondition) GetFields() []Field {
-	return []Field{c.Field}
+	return nil
 }
 
 func (c SingleCondition) AppendValues(vals []interface{}) []interface{} {
@@ -254,42 +258,3 @@ func Or(condition Condition, conditions ...Condition) Condition {
 //	LikeOr(v string, vs ...string) Condition
 //	NotLikeOr(v string, vs ...string) Condition
 //}
-
-var FieldInterfaceDeclaration = `
-{{- define "FieldInterfaceDeclaration" -}}
-type {{.TypeName}}{{.FieldName}}Field interface {
-	{{.TypeName}}Field
-	{{template "CommonFieldConditionOperations" . }}
-	{{if .FieldNullable}}{{template "NullableFieldConditionOperations" . }}{{end}}
-	{{if .FieldLikable}}{{template "LikeFieldConditionOperations" . }}{{end}}
-	{{if .FieldBetweenable}}{{template "BetweenFieldConditionOperations" . }}{{end}}
-}
-{{- end -}}
-
-{{- define "CommonFieldConditionOperations" -}}
-	Equal({{.FieldTypePackageAlias}}{{if .FieldTypePackageAlias}}.{{end}}{{.FieldType}}) sql.Condition
-	NotEqual({{.FieldTypePackageAlias}}{{if .FieldTypePackageAlias}}.{{end}}{{.FieldType}}) sql.Condition
-	Greater({{.FieldTypePackageAlias}}{{if .FieldTypePackageAlias}}.{{end}}{{.FieldType}}) sql.Condition
-	GreaterOrEqual({{.FieldTypePackageAlias}}{{if .FieldTypePackageAlias}}.{{end}}{{.FieldType}}) sql.Condition
-	Lesser({{.FieldTypePackageAlias}}{{if .FieldTypePackageAlias}}.{{end}}{{.FieldType}}) sql.Condition
-	LesserOrEqual({{.FieldTypePackageAlias}}{{if .FieldTypePackageAlias}}.{{end}}{{.FieldType}}) sql.Condition
-	In(...{{.FieldTypePackageAlias}}{{if .FieldTypePackageAlias}}.{{end}}{{.FieldType}}) sql.Condition
-	NotIn(...{{.FieldTypePackageAlias}}{{if .FieldTypePackageAlias}}.{{end}}{{.FieldType}}) sql.Condition
-{{- end -}}
-
-{{- define "BetweenFieldConditionOperations" -}}
-	Between({{.FieldTypePackageAlias}}{{if .FieldTypePackageAlias}}.{{end}}{{.FieldType}}, {{.FieldTypePackageAlias}}{{if .FieldTypePackageAlias}}.{{end}}{{.FieldType}}) sql.Condition
-	NotBetween({{.FieldTypePackageAlias}}{{if .FieldTypePackageAlias}}.{{end}}{{.FieldType}}, {{.FieldTypePackageAlias}}{{if .FieldTypePackageAlias}}.{{end}}{{.FieldType}}) sql.Condition
-{{- end -}}
-
-{{- define "LikeFieldConditionOperations" -}}
-	Like(...{{.FieldTypePackageAlias}}{{if .FieldTypePackageAlias}}.{{end}}{{.FieldType}}) sql.Condition
-	NotLike(...{{.FieldTypePackageAlias}}{{if .FieldTypePackageAlias}}.{{end}}{{.FieldType}}) sql.Condition
-	LikeOr(...{{.FieldTypePackageAlias}}{{if .FieldTypePackageAlias}}.{{end}}{{.FieldType}}) sql.Condition
-	NotLikeOr(...{{.FieldTypePackageAlias}}{{if .FieldTypePackageAlias}}.{{end}}{{.FieldType}}) sql.Condition
-{{- end -}}
-
-{{- define "NullableFieldConditionOperations" -}}
-	IsNull() sql.Condition
-	IsNotNull() sql.Condition
-{{- end -}}`
