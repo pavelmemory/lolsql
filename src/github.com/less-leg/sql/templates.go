@@ -17,32 +17,32 @@ var TemplateFunctions = template.FuncMap{
 	},
 }
 
-var TypeSelect =
-`func {{.TypeName}}(fields ...{{.TypeName}}Field) {{ToLower .TypeName}}Builder {
-	return {{ToLower .TypeName}}Builder{}
+var TypeSelect = `{{- $builderType := print (ToLower .TypeName) "Builder" -}}
+func {{.TypeName}}(fields ...{{.TypeName}}Field) {{$builderType}} {
+	return {{$builderType}}{}
 }
 
-func (b {{ToLower .TypeName}}Builder) Where(...sql.Condition) {{ToLower .TypeName}}Builder {
+func (b {{$builderType}}) Where(...sql.Condition) {{$builderType}} {
 	return b
 }
 
-func (b {{ToLower .TypeName}}Builder) GroupBy(column ...OrderField) {{ToLower .TypeName}}Builder {
+func (b {{$builderType}}) GroupBy(column ...OrderField) {{$builderType}} {
 	return b
 }
 
-func (b {{ToLower .TypeName}}Builder) Having(...sql.Condition) {{ToLower .TypeName}}Builder {
+func (b {{$builderType}}) Having(...sql.Condition) {{$builderType}} {
 	return b
 }
 
-func (b {{ToLower .TypeName}}Builder) OrderBy(...sql.SortOrder) {{ToLower .TypeName}}Builder {
+func (b {{$builderType}}) OrderBy(...sql.SortOrder) {{$builderType}} {
 	return b
 }
 
-func (b {{ToLower .TypeName}}Builder) Get() ([]test_model.Order, error) {
+func (b {{$builderType}}) Get() ([]{{AsTypeName .TypeSelector .TypeName}}, error) {
 	return nil, nil
 }
 
-func (b {{ToLower .TypeName}}Builder) GetPtr() ([]*test_model.Order, error) {
+func (b {{$builderType}}) GetPtr() ([]*{{AsTypeName .TypeSelector .TypeName}}, error) {
 	return nil, nil
 }`
 
@@ -100,7 +100,7 @@ func MultiTimeTime(times ...time.Time) (vals []interface{}) {
 	return
 }
 */
-var SliceXTypeToSliceInterfaces = `func Multi{{Title .Selector}}{{Title .TypeName}}({{ToLower .TypeName}}s ...{{if .Selector}}{{.Selector}}.{{end}}{{.TypeName}}) (vals []interface{}) {
+var SliceXTypeToSliceInterfaces = `func Multi{{Title .Selector}}{{Title .TypeName}}({{ToLower .TypeName}}s ...{{AsTypeName .Selector .TypeName}}) (vals []interface{}) {
 	for _, v := range {{ToLower .TypeName}}s {
 		vals = append(vals, v)
 	}
@@ -118,7 +118,9 @@ func (t orderStartField) Equal(v time.Time) sql.Condition {
 }
 ...
 */
-var FieldConditionDeclaration = `func (t {{ToLower .TypeName}}{{.FieldName}}Field) Equal(v {{AsTypeName .FieldSelector .FieldType}}) sql.Condition {
+var FieldConditionDeclaration = `{{- $typeFieldName := print (ToLower .TypeName) .FieldName "Field" -}}
+{{- $typeFieldType := AsTypeName .FieldSelector .FieldType -}}
+func (t {{$typeFieldName}}) Equal(v {{$typeFieldType}}) sql.Condition {
 	return sql.SingleCondition{
 		Type:                t.GetType(),
 		Field:               t.GetName(),
@@ -127,7 +129,7 @@ var FieldConditionDeclaration = `func (t {{ToLower .TypeName}}{{.FieldName}}Fiel
 	}
 }
 
-func (t {{ToLower .TypeName}}{{.FieldName}}Field) NotEqual(v {{AsTypeName .FieldSelector .FieldType}}) sql.Condition {
+func (t {{$typeFieldName}}) NotEqual(v {{$typeFieldType}}) sql.Condition {
 	return sql.SingleCondition{
 		Type:                t.GetType(),
 		Field:               t.GetName(),
@@ -136,7 +138,7 @@ func (t {{ToLower .TypeName}}{{.FieldName}}Field) NotEqual(v {{AsTypeName .Field
 	}
 }
 
-func (t {{ToLower .TypeName}}{{.FieldName}}Field) Greater(v {{AsTypeName .FieldSelector .FieldType}}) sql.Condition {
+func (t {{$typeFieldName}}) Greater(v {{$typeFieldType}}) sql.Condition {
 	return sql.SingleCondition{
 		Type:                t.GetType(),
 		Field:               t.GetName(),
@@ -145,7 +147,7 @@ func (t {{ToLower .TypeName}}{{.FieldName}}Field) Greater(v {{AsTypeName .FieldS
 	}
 }
 
-func (t {{ToLower .TypeName}}{{.FieldName}}Field) GreaterOrEqual(v {{AsTypeName .FieldSelector .FieldType}}) sql.Condition {
+func (t {{$typeFieldName}}) GreaterOrEqual(v {{$typeFieldType}}) sql.Condition {
 	return sql.SingleCondition{
 		Type:                t.GetType(),
 		Field:               t.GetName(),
@@ -154,7 +156,7 @@ func (t {{ToLower .TypeName}}{{.FieldName}}Field) GreaterOrEqual(v {{AsTypeName 
 	}
 }
 
-func (t {{ToLower .TypeName}}{{.FieldName}}Field) Lesser(v {{AsTypeName .FieldSelector .FieldType}}) sql.Condition {
+func (t {{$typeFieldName}}) Lesser(v {{$typeFieldType}}) sql.Condition {
 	return sql.SingleCondition{
 		Type:                t.GetType(),
 		Field:               t.GetName(),
@@ -163,7 +165,7 @@ func (t {{ToLower .TypeName}}{{.FieldName}}Field) Lesser(v {{AsTypeName .FieldSe
 	}
 }
 
-func (t {{ToLower .TypeName}}{{.FieldName}}Field) LesserOrEqual(v {{AsTypeName .FieldSelector .FieldType}}) sql.Condition {
+func (t {{$typeFieldName}}) LesserOrEqual(v {{$typeFieldType}}) sql.Condition {
 	return sql.SingleCondition{
 		Type:                t.GetType(),
 		Field:               t.GetName(),
@@ -172,7 +174,7 @@ func (t {{ToLower .TypeName}}{{.FieldName}}Field) LesserOrEqual(v {{AsTypeName .
 	}
 }
 
-func (t {{ToLower .TypeName}}{{.FieldName}}Field) In(v ...{{AsTypeName .FieldSelector .FieldType}}) sql.Condition {
+func (t {{$typeFieldName}}) In(v ...{{$typeFieldType}}) sql.Condition {
 	return sql.SingleCondition{
 		Type:                t.GetType(),
 		Field:               t.GetName(),
@@ -181,7 +183,7 @@ func (t {{ToLower .TypeName}}{{.FieldName}}Field) In(v ...{{AsTypeName .FieldSel
 	}
 }
 
-func (t {{ToLower .TypeName}}{{.FieldName}}Field) NotIn(v ...{{AsTypeName .FieldSelector .FieldType}}) sql.Condition {
+func (t {{$typeFieldName}}) NotIn(v ...{{$typeFieldType}}) sql.Condition {
 	return sql.SingleCondition{
 		Type:                t.GetType(),
 		Field:               t.GetName(),
@@ -191,7 +193,7 @@ func (t {{ToLower .TypeName}}{{.FieldName}}Field) NotIn(v ...{{AsTypeName .Field
 }
 
 {{- if .FieldNullable}}
-func (t {{ToLower .TypeName}}{{.FieldName}}Field) IsNull() sql.Condition {
+func (t {{$typeFieldName}}) IsNull() sql.Condition {
 	return sql.SingleCondition{
 		Type:                t.GetType(),
 		Field:               t.GetName(),
@@ -199,7 +201,7 @@ func (t {{ToLower .TypeName}}{{.FieldName}}Field) IsNull() sql.Condition {
 	}
 }
 
-func (t {{ToLower .TypeName}}{{.FieldName}}Field) IsNotNull() sql.Condition {
+func (t {{$typeFieldName}}) IsNotNull() sql.Condition {
 	return sql.SingleCondition{
 		Type:                t.GetType(),
 		Field:               t.GetName(),
@@ -209,7 +211,7 @@ func (t {{ToLower .TypeName}}{{.FieldName}}Field) IsNotNull() sql.Condition {
 {{end -}}
 
 {{- if .FieldLikable}}
-func (t {{ToLower .TypeName}}{{.FieldName}}Field) Like(vs ...{{AsTypeName .FieldSelector .FieldType}}) sql.Condition {
+func (t {{$typeFieldName}}) Like(vs ...{{$typeFieldType}}) sql.Condition {
 	mc := sql.MultiCondition{LogicalOperator: sql.Conjunction}
 	for _, v := range vs {
 		mc.Conditions = append(mc.Conditions, sql.SingleCondition{
@@ -222,7 +224,7 @@ func (t {{ToLower .TypeName}}{{.FieldName}}Field) Like(vs ...{{AsTypeName .Field
 	return mc
 }
 
-func (t {{ToLower .TypeName}}{{.FieldName}}Field) LikeOr(vs ...{{AsTypeName .FieldSelector .FieldType}}) sql.Condition {
+func (t {{$typeFieldName}}) LikeOr(vs ...{{$typeFieldType}}) sql.Condition {
 	mc := sql.MultiCondition{LogicalOperator: sql.Disjunction}
 	for _, v := range vs {
 		mc.Conditions = append(mc.Conditions, sql.SingleCondition{
@@ -235,7 +237,7 @@ func (t {{ToLower .TypeName}}{{.FieldName}}Field) LikeOr(vs ...{{AsTypeName .Fie
 	return mc
 }
 
-func (t {{ToLower .TypeName}}{{.FieldName}}Field) NotLike(vs ...{{AsTypeName .FieldSelector .FieldType}}) sql.Condition {
+func (t {{$typeFieldName}}) NotLike(vs ...{{$typeFieldType}}) sql.Condition {
 	mc := sql.MultiCondition{LogicalOperator: sql.Conjunction}
 	for _, v := range vs {
 		mc.Conditions = append(mc.Conditions, sql.SingleCondition{
@@ -248,7 +250,7 @@ func (t {{ToLower .TypeName}}{{.FieldName}}Field) NotLike(vs ...{{AsTypeName .Fi
 	return mc
 }
 
-func (t {{ToLower .TypeName}}{{.FieldName}}Field) NotLikeOr(vs ...{{AsTypeName .FieldSelector .FieldType}}) sql.Condition {
+func (t {{$typeFieldName}}) NotLikeOr(vs ...{{$typeFieldType}}) sql.Condition {
 	mc := sql.MultiCondition{LogicalOperator: sql.Disjunction}
 	for _, v := range vs {
 		mc.Conditions = append(mc.Conditions, sql.SingleCondition{
@@ -263,7 +265,7 @@ func (t {{ToLower .TypeName}}{{.FieldName}}Field) NotLikeOr(vs ...{{AsTypeName .
 {{end -}}
 
 {{- if .FieldBetweenable}}
-func (t {{ToLower .TypeName}}{{.FieldName}}Field) Between(v1 {{AsTypeName .FieldSelector .FieldType}}, v2 {{AsTypeName .FieldSelector .FieldType}}) sql.Condition {
+func (t {{$typeFieldName}}) Between(v1 {{$typeFieldType}}, v2 {{$typeFieldType}}) sql.Condition {
 	return sql.SingleCondition{
 		Type:                t.GetType(),
 		Field:               t.GetName(),
@@ -272,7 +274,7 @@ func (t {{ToLower .TypeName}}{{.FieldName}}Field) Between(v1 {{AsTypeName .Field
 	}
 }
 
-func (t {{ToLower .TypeName}}{{.FieldName}}Field) NotBetween(v1 {{AsTypeName .FieldSelector .FieldType}}, v2 {{AsTypeName .FieldSelector .FieldType}}) sql.Condition {
+func (t {{$typeFieldName}}) NotBetween(v1 {{$typeFieldType}}, v2 {{$typeFieldType}}) sql.Condition {
 	return sql.SingleCondition{
 		Type:                t.GetType(),
 		Field:               t.GetName(),
@@ -291,26 +293,29 @@ type OrderStartField interface {
 }
 */
 var FieldConditionInterfaceDeclaration = `{{- define "CommonFieldConditionOperations" -}}
-	Equal({{AsTypeName .FieldSelector .FieldType}}) sql.Condition
-	NotEqual({{AsTypeName .FieldSelector .FieldType}}) sql.Condition
-	Greater({{AsTypeName .FieldSelector .FieldType}}) sql.Condition
-	GreaterOrEqual({{AsTypeName .FieldSelector .FieldType}}) sql.Condition
-	Lesser({{AsTypeName .FieldSelector .FieldType}}) sql.Condition
-	LesserOrEqual({{AsTypeName .FieldSelector .FieldType}}) sql.Condition
-	In(...{{AsTypeName .FieldSelector .FieldType}}) sql.Condition
-	NotIn(...{{AsTypeName .FieldSelector .FieldType}}) sql.Condition
+{{- $typeFieldType := AsTypeName .FieldSelector .FieldType -}}
+	Equal({{$typeFieldType}}) sql.Condition
+	NotEqual({{$typeFieldType}}) sql.Condition
+	Greater({{$typeFieldType}}) sql.Condition
+	GreaterOrEqual({{$typeFieldType}}) sql.Condition
+	Lesser({{$typeFieldType}}) sql.Condition
+	LesserOrEqual({{$typeFieldType}}) sql.Condition
+	In(...{{$typeFieldType}}) sql.Condition
+	NotIn(...{{$typeFieldType}}) sql.Condition
 {{- end -}}
 
 {{- define "BetweenFieldConditionOperations" -}}
-	Between({{AsTypeName .FieldSelector .FieldType}}, {{AsTypeName .FieldSelector .FieldType}}) sql.Condition
-	NotBetween({{AsTypeName .FieldSelector .FieldType}}, {{AsTypeName .FieldSelector .FieldType}}) sql.Condition
+{{- $typeFieldType := AsTypeName .FieldSelector .FieldType -}}
+	Between({{$typeFieldType}}, {{$typeFieldType}}) sql.Condition
+	NotBetween({{$typeFieldType}}, {{$typeFieldType}}) sql.Condition
 {{- end -}}
 
 {{- define "LikeFieldConditionOperations" -}}
-	Like(...{{AsTypeName .FieldSelector .FieldType}}) sql.Condition
-	NotLike(...{{AsTypeName .FieldSelector .FieldType}}) sql.Condition
-	LikeOr(...{{AsTypeName .FieldSelector .FieldType}}) sql.Condition
-	NotLikeOr(...{{AsTypeName .FieldSelector .FieldType}}) sql.Condition
+{{- $typeFieldType := AsTypeName .FieldSelector .FieldType -}}
+	Like(...{{$typeFieldType}}) sql.Condition
+	NotLike(...{{$typeFieldType}}) sql.Condition
+	LikeOr(...{{$typeFieldType}}) sql.Condition
+	NotLikeOr(...{{$typeFieldType}}) sql.Condition
 {{- end -}}
 
 {{- define "NullableFieldConditionOperations" -}}

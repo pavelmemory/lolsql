@@ -11,15 +11,17 @@ func TestTypeSelectTemplate(t *testing.T) {
 	tmpl := template.New("").Funcs(TemplateFunctions)
 	tmpl = template.Must(tmpl.Parse(TypeSelect))
 	err := tmpl.Execute(&buffer, struct {
-		TypeName string
+		TypeName     string
+		TypeSelector string
 	}{
-		TypeName: "Order",
+		TypeName:     "Order",
+		TypeSelector: "test_model",
 	})
 	if err != nil {
 		t.Fatal(err)
 	}
 	if buffer.String() !=
-`func Order(fields ...OrderField) orderBuilder {
+		`func Order(fields ...OrderField) orderBuilder {
 	return orderBuilder{}
 }
 

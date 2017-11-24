@@ -19,7 +19,7 @@ type Order struct {
 	Version  int
 	Customer *string
 	Owner    *User
-	TaxFree dbmodel.Confirmation
+	TaxFree  dbmodel.Confirmation
 	Start    time.Time
 }
 

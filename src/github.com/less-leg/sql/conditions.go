@@ -1,8 +1,8 @@
 package sql
 
 import (
-	"time"
 	"github.com/less-leg/parser"
+	"time"
 )
 
 type Condition interface {
@@ -60,7 +60,7 @@ func (c MultiCondition) Or(condition Condition) Condition {
 }
 
 type SingleCondition struct {
-	Type parser.TypeIdentity
+	Type  parser.TypeIdentity
 	Field string
 	ComparatorOperation
 	Values []interface{}

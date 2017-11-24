@@ -7,6 +7,7 @@ import (
 	"github.com/less-leg/sql"
 	"github.com/less-leg/test_model"
 	"time"
+	"errors"
 )
 
 type OrderDirection string
@@ -17,8 +18,9 @@ type relatedOrderEntity struct {
 }
 
 type orderBuilder struct {
-	uow    UnitOfWork
-	fields []OrderField
+	uow        UnitOfWork
+	fields     []OrderField
+	conditions []sql.Condition
 }
 
 func Desc(field OrderField) OrderDirection {
@@ -263,34 +265,55 @@ func Owner() OrderOwnerField {
 }
 
 type UnitOfWork struct {
+	Types map[parser.TypeIdentity]parser.Type
 }
 
 func (uow UnitOfWork) Order(fields ...OrderField) orderBuilder {
-	return orderBuilder{uow: uow}
+	return orderBuilder{uow: uow, fields: fields}
 }
 
-func Order(fields ...OrderField) orderBuilder {
-	return orderBuilder{}
-}
+//func Order(fields ...OrderField) orderBuilder {
+//	return orderBuilder{}
+//}
 
-func (b orderBuilder) Where(...sql.Condition) orderBuilder {
+func (b orderBuilder) Where(conditions ...sql.Condition) orderBuilder {
+	b.conditions = append(b.conditions, conditions...)
 	return b
 }
 
-func (b orderBuilder) GroupBy(column ...OrderField) orderBuilder {
-	return b
-}
-
-func (b orderBuilder) Having(...sql.Condition) orderBuilder {
-	return b
-}
-
-func (b orderBuilder) OrderBy(...sql.SortOrder) orderBuilder {
-	return b
-}
+//func (b orderBuilder) GroupBy(column ...OrderField) orderBuilder {
+//	return b
+//}
+//
+//func (b orderBuilder) Having(...sql.Condition) orderBuilder {
+//	return b
+//}
+//
+//func (b orderBuilder) OrderBy(...sql.SortOrder) orderBuilder {
+//	return b
+//}
 
 func (b orderBuilder) Get() ([]test_model.Order, error) {
-	return nil, nil
+	return b.uow.get(b.fields, b.conditions)
+}
+func (uow UnitOfWork) get(fields []OrderField, conditions []sql.Condition) ([]test_model.Order, error) {
+	if len(fields) == 0 {
+		fields = []OrderField{orderStartField{}}
+	} else {
+		for i := range fields {
+			field := fields[i]
+			typ, found := uow.Types[field.GetType()]
+			if !found {
+				return nil, errors.New("type not found")
+			}
+			typsFields := typ.GetFields()
+			typsField, found := typsFields[field.GetName()]
+			if !found {
+				return nil, errors.New("field for type not found:" + field.GetName())
+			}
+			typsField.
+		}
+	}
 }
 
 func (b orderBuilder) GetPtr() ([]*test_model.Order, error) {

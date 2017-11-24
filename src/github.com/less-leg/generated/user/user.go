@@ -3,7 +3,6 @@ package user
 type OrderDirection string
 
 type UserField interface {
-
 }
 
 type userBuilder struct {

@@ -9,15 +9,15 @@ package composer
    - ORDER BY
   such as
    - Equal - same as `=`
-   - IsNot - same as `<>` or `!=`
+   - NotEqual - same as `<>` or `!=`
    - Like - same as `LIKE '_va%' AND LIKE '123va%'`
    - LikeOr - same as `LIKE '_va%' OR LIKE '11va%'`
    - NotLike - same as `NOT LIKE '_va%' AND NOT LIKE '123va%'`
    - NotLikeOr - same as `NOT LIKE '_va%' OR NOT LIKE '11va%'`
    - Greater - same as `>`
    - Lower - same as `<`
-   - IsOrGreater - same as `>=`
-   - IsOrLower - same as `<=`
+   - EqualOrGreater - same as `>=`
+   - EqualOrLower - same as `<=`
    - Between - same as `BETWEEN 1 AND 4`
    - IsNull - same as `IS NULL`
    - IsNotNull - same as `IS NOT NULL`

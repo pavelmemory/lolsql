@@ -1,11 +1,11 @@
 package composer
 
 import (
+	"github.com/less-leg/dbmodel"
 	"github.com/less-leg/generated/order"
 	"github.com/less-leg/sql"
 	"github.com/less-leg/test_model"
 	"testing"
-	"github.com/less-leg/dbmodel"
 	"time"
 )
 
@@ -14,16 +14,16 @@ func TestName(t *testing.T) {
 		orders []test_model.Order
 		err    error
 	)
-	orders, err = order.Order(order.Id(), order.Owner(), order.Start()).
+	orders, err = order.UnitOfWork{}.Order(order.Id(), order.Owner(), order.Start()).
 		Where(
 			sql.Or(
 				order.Id().Equal(1).Or(order.Owner().Name().Like("Pavlo%")),
 				order.TaxFree().Equal(dbmodel.Confirmation("yes")),
 				order.Owner().Version().NotIn(1, 4, 9)),
-				order.Start().Between(time.Now(), time.Now())).
-		OrderBy(sql.Desc(order.Id())).
-		GroupBy(order.Id(), order.Owner().Name()).
-		Having(order.Id().Equal(1)).
+			order.Start().Between(time.Now(), time.Now())).
+		//OrderBy(sql.Desc(order.Id())).
+		//GroupBy(order.Id(), order.Owner().Name()).
+		//Having(order.Id().Equal(1)).
 		Get()
 	if err != nil {
 		t.Fatal(err)
