@@ -7,7 +7,13 @@ import (
 
 type MyTime time.Time
 
+type UserKey struct {
+	Identifier int
+	Version  int
+}
+
 type User struct {
+	UserKey
 	Name   string
 	Father *User `json:"omitempty"`
 	time.Time
@@ -15,10 +21,11 @@ type User struct {
 }
 
 type Order struct {
-	Id       int
-	Version  int
+	Id       int `lol:"pk,column[PK]"`
+	Version  int `lol:"PK"`
 	Customer *string
-	Owner    *User
+	// add support to provide mapping of fields to embedded field if they have same corresponding field names
+	Owner    *User `lol:"FK[Id,Version -> UserKey.Identifier, UserKey.Version]"`
 	TaxFree  dbmodel.Confirmation
 	Start    time.Time
 }

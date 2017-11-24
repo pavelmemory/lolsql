@@ -16,3 +16,7 @@ func Desc(Field) SortOrder {
 func Asc(Field) SortOrder {
 	return nil
 }
+
+type TableNameOverride interface {
+	TableName() string
+}

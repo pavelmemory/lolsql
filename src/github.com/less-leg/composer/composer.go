@@ -24,3 +24,23 @@ package composer
    - In - same as `IN (...)`
    - NotIn - same as `NOT IN (...)`
 */
+
+/*
+Each entity must have fields that are represent their identity(uniqueness).
+Each such field must have comparable by `=` type.
+Each field must be marked with tag `lol:"PK"` (case insensitive).
+
+Each entity can have fields with supported types to map to table columns.
+By default field name will be used to build SQL queries.
+It can be overwritten with tag `lol:"column[PK]"` where 'PK' is a column name that will be used.
+
+By default each entity with tag `lol:"PK"` will be mapped to table in database.
+Type name will be used as table name.
+It can be overwritten by implementing `TableNameOverride` interface.
+
+Entity can have relations: 1:1, 1:m, m:n
+Relation between entities described by providing tag `lol:"FK[Id->Identifier]"`
+Where 'FK' signals about existing relation and
+join of tables must be done via field 'Id' for current type and field 'Identifier' for type that specified for field with tag.
+
+*/

@@ -19,6 +19,7 @@ type Field interface {
 	IsItReference() bool
 	IsItEmbedded() bool
 	GetTypeSpecifications() []TypeSpecification
+	IsRelated() bool
 }
 
 type TypeSpecification string
@@ -71,6 +72,10 @@ func (ufield UserDefinedTypeField) IsItEmbedded() bool {
 
 func (ufield UserDefinedTypeField) GetTypeSpecifications() []TypeSpecification {
 	return ufield.OrderedTypeSpecifications
+}
+
+func (ufield UserDefinedTypeField) IsRelated() bool {
+	return false
 }
 
 type Type interface {
