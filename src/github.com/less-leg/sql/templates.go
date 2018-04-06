@@ -230,7 +230,7 @@ func (t {{$typeFieldName}}) LikeOr(vs ...{{$typeFieldType}}) sql.Condition {
 		mc.Conditions = append(mc.Conditions, sql.SingleCondition{
 			Type:                t.GetType(),
 			Field:               t.GetName(),
-			ComparatorOperation: sql.Like,
+			ComparatorOperation: sql.LikeOr,
 			Values:              []interface{}{v},
 		})
 	}
@@ -256,7 +256,7 @@ func (t {{$typeFieldName}}) NotLikeOr(vs ...{{$typeFieldType}}) sql.Condition {
 		mc.Conditions = append(mc.Conditions, sql.SingleCondition{
 			Type:                t.GetType(),
 			Field:               t.GetName(),
-			ComparatorOperation: sql.NotLike,
+			ComparatorOperation: sql.NotLikeOr,
 			Values:              []interface{}{v},
 		})
 	}

@@ -1,13 +1,13 @@
 package order
 
 import (
+	"time"
+
 	"github.com/less-leg/dbmodel"
 	"github.com/less-leg/generated/common"
 	"github.com/less-leg/parser"
 	"github.com/less-leg/sql"
 	"github.com/less-leg/test_model"
-	"time"
-	"errors"
 )
 
 type OrderDirection string
@@ -294,26 +294,7 @@ func (b orderBuilder) Where(conditions ...sql.Condition) orderBuilder {
 //}
 
 func (b orderBuilder) Get() ([]test_model.Order, error) {
-	return b.uow.get(b.fields, b.conditions)
-}
-func (uow UnitOfWork) get(fields []OrderField, conditions []sql.Condition) ([]test_model.Order, error) {
-	if len(fields) == 0 {
-		fields = []OrderField{orderStartField{}}
-	} else {
-		for i := range fields {
-			field := fields[i]
-			typ, found := uow.Types[field.GetType()]
-			if !found {
-				return nil, errors.New("type not found")
-			}
-			typsFields := typ.GetFields()
-			typsField, found := typsFields[field.GetName()]
-			if !found {
-				return nil, errors.New("field for type not found:" + field.GetName())
-			}
-			typsField.
-		}
-	}
+	return nil, nil
 }
 
 func (b orderBuilder) GetPtr() ([]*test_model.Order, error) {
